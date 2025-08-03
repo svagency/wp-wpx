@@ -927,14 +927,13 @@ function renderLocationData(locationData) {
         place_id
     } = locationData;
     
-    // Generate Google Maps embed URL with marker
-    const mapUrl = `https://www.google.com/maps/embed/v1/place?
-        key=AIzaSyDGO9Rzc6uh9MkB3jT2xZOw-1u9fGeiIRc&
-        q=${encodeURIComponent(address)}&
-        center=${lat},${lng}&
-        zoom=15&
-        maptype=roadmap&
-        marker=${lat},${lng}`.replace(/\s+/g, '');
+    // Generate Google Maps embed URL
+    const mapUrl = `https://www.google.com/maps/embed/v1/place
+        ?key=AIzaSyDGO9Rzc6uh9MkB3jT2xZOw-1u9fGeiIRc
+        &q=${encodeURIComponent(address)}
+        ¢er=${lat},${lng}
+        &zoom=15
+        &maptype=roadmap`.replace(/\s+/g, '');
     
     // Generate Google Maps link
     const googleMapsLink = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}&query_place_id=${place_id}`;
@@ -992,15 +991,20 @@ function renderLocationData(locationData) {
                     </div>
                 </div>
             </div>
-            <div class="h-64 md:h-full rounded-lg overflow-hidden border border-gray-200">
+            <div class="h-64 md:h-full rounded-lg overflow-hidden border border-gray-200 bg-gray-100">
                 <iframe 
                     width="100%" 
                     height="100%" 
                     frameborder="0" 
                     style="border:0" 
                     src="${mapUrl}" 
-                    allowfullscreen>
+                    allowfullscreen
+                    loading="lazy"
+                    referrerpolicy="no-referrer-when-downgrade">
                 </iframe>
+                <div class="absolute bottom-2 right-2 bg-white px-2 py-1 text-xs rounded shadow-md">
+                    <a href="${googleMapsLink}" target="_blank" class="text-blue-600 hover:underline">View Larger Map</a>
+                </div>
             </div>
         </div>
     `;
