@@ -349,8 +349,14 @@ async function loadContent() {
             if (!restBase) {
                 throw new Error(`Invalid post type: ${currentType}`);
             }
-            // Add sticky parameter to sort sticky posts first
-            url = `${wpApiBase}/${restBase}?_embed&per_page=${settings.itemsPerPage}&page=${currentPage}&orderby=date&order=${settings.sortDescending ? 'desc' : 'asc'}`;
+            // Add _embed parameter to include featured media and author, and acf=1 to include ACF fields
+            url = `${wpApiBase}/${restBase}?_embed&acf=1&per_page=${settings.itemsPerPage}&page=${currentPage}&orderby=date&order=${settings.sortDescending ? 'desc' : 'asc'}`;
+        }
+        
+        // Add search query if provided
+        const searchInput = document.getElementById('searchInput');
+        if (searchInput && searchInput.value.trim()) {
+            url += `&search=${encodeURIComponent(searchInput.value.trim())}`;
         }
         
         console.log('Fetching URL:', url); // Debug log
@@ -568,6 +574,7 @@ function renderFeedView(items, container) {
                             </div>
                         ` : ''}
                         <div class="text-gray-600 line-clamp-3">${item.excerpt?.rendered || item.description?.rendered || ''}</div>
+                        ${renderAcfFieldsPreview(item.acf)}
                     </div>
                 </div>
             `;
@@ -824,17 +831,169 @@ function renderPageView() {
     // Generate metadata table
     const metadataTable = generateMetadataTable(currentItem);
     
+    // Generate ACF fields section if available
+    const acfFields = currentItem.acf || {};
+    const hasAcfFields = Object.keys(acfFields).length > 0 && 
+                        Object.values(acfFields).some(val => val !== null && val !== undefined && val !== '');
+    
+    // Filter out empty ACF fields
+    const displayAcfFields = hasAcfFields ? 
+        Object.entries(acfFields)
+            .filter(([key, value]) => value !== null && value !== undefined && value !== '' && !key.startsWith('_'))
+            .sort(([keyA], [keyB]) => keyA.localeCompare(keyB))
+        : [];
+    
     document.getElementById('popoverContent').innerHTML = `
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div class="lg:col-span-2">
-                <h2 class="text-2xl font-bold mb-2">${title}</h2>
-                <div class="text-sm text-gray-500 mb-4">${date}</div>
-                ${featuredImage ? `<img src="${featuredImage}" alt="${title}" class="w-full h-auto rounded mb-4">` : ''}
-                <div class="prose max-w-none">${currentItem.content?.rendered || currentItem.description?.rendered || ''}</div>
+            <div class="lg:col-span-2 space-y-6">
+                <div>
+                    <h2 class="text-2xl font-bold mb-2">${title}</h2>
+                    <div class="text-sm text-gray-500 mb-4">${date}</div>
+                    ${featuredImage ? `<img src="${featuredImage}" alt="${title}" class="w-full h-auto rounded-lg shadow mb-4">` : ''}
+                    <div class="prose max-w-none">${currentItem.content?.rendered || currentItem.description?.rendered || ''}</div>
+                </div>
+                
+                ${displayAcfFields.length > 0 ? `
+                    <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                        <h3 class="text-lg font-semibold mb-3 flex items-center">
+                            <svg class="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                            </svg>
+                            Custom Fields
+                        </h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            ${displayAcfFields.map(([key, value]) => {
+                                const displayKey = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                                let displayValue = formatAcfValue(value);
+                                
+                                return `
+                                    <div class="bg-white p-3 rounded border border-gray-200">
+                                        <div class="text-sm font-medium text-gray-500 mb-1">${displayKey}</div>
+                                        <div class="text-gray-800 break-words">${displayValue}</div>
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                    </div>
+                ` : ''}
             </div>
-            <div class="lg:col-span-1">
-                <h3 class="text-lg font-semibold mb-3">Metadata</h3>
-                ${metadataTable}
+            <div class="space-y-6">
+                <div class="bg-white p-4 rounded-lg border border-gray-200">
+                    <h3 class="text-lg font-semibold mb-3 flex items-center">
+                        <svg class="w-5 h-5 mr-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        Details
+                    </h3>
+                    ${metadataTable}
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// Helper function to format ACF field values for display
+function formatAcfValue(value) {
+    if (value === null || value === undefined) return '';
+    
+    // Handle arrays and objects
+    if (Array.isArray(value)) {
+        if (value.length === 0) return '';
+        // If it's an array of objects, try to find a meaningful value
+        if (typeof value[0] === 'object' && value[0] !== null) {
+            // Try to find common fields like title, name, or label
+            const firstItem = value[0];
+            const displayValue = firstItem.title || firstItem.name || firstItem.label || 
+                               firstItem.url || firstItem.ID || JSON.stringify(firstItem);
+            return `${displayValue}${value.length > 1 ? ` +${value.length - 1} more` : ''}`;
+        }
+        return value.join(', ');
+    }
+    
+    // Handle objects
+    if (typeof value === 'object') {
+        // Check for common ACF field types
+        if (value.url) {
+            // Image or file field
+            if (value.sizes && value.sizes.thumbnail) {
+                return `<img src="${value.sizes.thumbnail}" alt="${value.alt || ''}" class="max-w-full h-auto rounded">`;
+            }
+            return `<a href="${value.url}" target="_blank" class="text-blue-600 hover:underline">${value.filename || 'View File'}</a>`;
+        }
+        
+        // Check for date field
+        if (value.date) {
+            return new Date(value.date).toLocaleDateString();
+        }
+        
+        // Check for link field
+        if (value.title && value.url) {
+            return `<a href="${value.url}" target="_blank" class="text-blue-600 hover:underline">${value.title}</a>`;
+        }
+        
+        // Default object display
+        return JSON.stringify(value);
+    }
+    
+    // Handle boolean values
+    if (typeof value === 'boolean') {
+        return value ? 'Yes' : 'No';
+    }
+    
+    // Handle URLs
+    if (typeof value === 'string' && (value.startsWith('http://') || value.startsWith('https://'))) {
+        return `<a href="${value}" target="_blank" class="text-blue-600 hover:underline">${value}</a>`;
+    }
+    
+    // Handle email addresses
+    if (typeof value === 'string' && value.includes('@')) {
+        return `<a href="mailto:${value}" class="text-blue-600 hover:underline">${value}</a>`;
+    }
+    
+    // Default: convert to string
+    return String(value);
+}
+
+// Helper function to render ACF fields in a preview
+function renderAcfFieldsPreview(acfFields) {
+    if (!acfFields || Object.keys(acfFields).length === 0) {
+        return '';
+    }
+    
+    // Filter out empty or system fields
+    const displayFields = Object.entries(acfFields).filter(([key, value]) => {
+        // Skip empty values and system fields (starting with _)
+        return value !== null && 
+               value !== undefined && 
+               value !== '' && 
+               !key.startsWith('_') && 
+               !Array.isArray(value) && 
+               typeof value !== 'object';
+    }).slice(0, 3); // Show only first 3 fields in preview
+    
+    if (displayFields.length === 0) {
+        return '';
+    }
+    
+    return `
+        <div class="mt-2 pt-2 border-t border-gray-100">
+            <div class="flex flex-wrap gap-1">
+                ${displayFields.map(([key, value]) => {
+                    const displayKey = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                    let displayValue = String(value);
+                    
+                    // Truncate long values
+                    if (displayValue.length > 50) {
+                        displayValue = displayValue.substring(0, 50) + '...';
+                    }
+                    
+                    return `
+                        <div class="text-xs bg-purple-50 text-purple-700 px-2 py-1 rounded flex items-center">
+                            <span class="font-medium">${displayKey}:</span>
+                            <span class="ml-1">${displayValue}</span>
+                        </div>
+                    `;
+                }).join('')}
             </div>
         </div>
     `;
@@ -1013,9 +1172,29 @@ function navigateCarousel(direction) {
 // Open popover
 async function openPopover(item) {
     currentItem = item;
-    document.getElementById('popoverOverlay').classList.remove('hidden');
-    
+    const overlay = document.getElementById('popoverOverlay');
     const content = document.getElementById('popoverContent');
+    const container = document.getElementById('popoverContentContainer');
+    const backdrop = document.getElementById('popoverBackdrop');
+    
+    // Show overlay
+    overlay.classList.remove('hidden');
+    
+    // Force reflow to ensure the element is in the DOM before applying transitions
+    void overlay.offsetHeight;
+    
+    // Start animations
+    overlay.classList.add('flex');
+    overlay.classList.remove('bg-opacity-0');
+    overlay.classList.add('bg-opacity-50');
+    
+    backdrop.classList.remove('bg-opacity-0');
+    backdrop.classList.add('bg-opacity-50');
+    
+    container.classList.remove('opacity-0', 'scale-95');
+    container.classList.add('opacity-100', 'scale-100');
+    
+    // Show loading state
     content.innerHTML = `
         <div class="flex justify-center items-center h-64">
             <div class="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
@@ -1040,9 +1219,27 @@ async function openPopover(item) {
     }
 }
 
-// Close popover
+// Close popover with animation
 function closePopover() {
-    document.getElementById('popoverOverlay').classList.add('hidden');
+    const overlay = document.getElementById('popoverOverlay');
+    const container = document.getElementById('popoverContentContainer');
+    const backdrop = document.getElementById('popoverBackdrop');
+    
+    // Start exit animations
+    overlay.classList.remove('bg-opacity-50');
+    overlay.classList.add('bg-opacity-0');
+    
+    backdrop.classList.remove('bg-opacity-50');
+    backdrop.classList.add('bg-opacity-0');
+    
+    container.classList.remove('opacity-100', 'scale-100');
+    container.classList.add('opacity-0', 'scale-95');
+    
+    // Hide overlay after animation completes
+    setTimeout(() => {
+        overlay.classList.add('hidden');
+        overlay.classList.remove('flex');
+    }, 300); // Match this with the CSS transition duration
 }
 
 // Toggle sort order
