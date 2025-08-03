@@ -43,31 +43,31 @@
                 </div>
             </div>
             
-            <!-- Category Navigation -->
+           
             <div class="container mx-auto px-4 py-2 overflow-x-auto">
                 <div class="flex items-center gap-3">
+
+
+
+
+
+                     <!-- Category Navigation -->
                     <span class="text-sm font-medium text-gray-500 whitespace-nowrap">Categories:</span>
                     <div id="categoryNav" class="flex-1 flex gap-2 py-1 overflow-x-auto">
                         <button class="category-filter px-3 py-1 text-xs rounded-full bg-blue-600 text-white hover:bg-blue-700 font-medium whitespace-nowrap" data-category="all">All</button>
                         <!-- Categories will be populated by JavaScript -->
                     </div>
-                </div>
-            </div>
 
-            <!-- Tag Navigation -->
-            <div class="container mx-auto px-4 py-2 overflow-x-auto">
-                <div class="flex items-center gap-3">
-                    <span class="text-sm font-medium text-gray-500 whitespace-nowrap">Tags:</span>
-                    <div id="tagNav" class="flex-1 flex gap-2 py-1 overflow-x-auto">
-                        <button class="tag-filter px-3 py-1 text-xs rounded-full bg-green-600 text-white hover:bg-green-700 font-medium whitespace-nowrap" data-tag="all">All</button>
-                        <!-- Tags will be populated by JavaScript -->
-                    </div>
-                </div>
-            </div>
 
-             <!-- Post Types Navigation -->
-             <div class="container mx-auto px-4 py-2 overflow-x-auto">
-                <div class="flex items-center gap-3">
+                     <!-- Tag Navigation -->
+                     <span class="text-sm font-medium text-gray-500 whitespace-nowrap">Tags:</span>
+                     <div id="tagNav" class="flex-1 flex gap-2 py-1 overflow-x-auto">
+                         <button class="tag-filter px-3 py-1 text-xs rounded-full bg-green-600 text-white hover:bg-green-700 font-medium whitespace-nowrap" data-tag="all">All</button>
+                         <!-- Tags will be populated by JavaScript -->
+                     </div>
+
+
+                      <!-- Post Types Navigation -->
                     <span class="text-sm font-medium text-gray-500 whitespace-nowrap">Post Types:</span>
                     <div id="post-types-nav" class="flex flex-wrap gap-2 p-4">
                         <!-- Loading indicator -->
@@ -76,22 +76,22 @@
                             Loading post types...
                         </div>
                     </div>
+
                 </div>
             </div>
 
-
-        </div>
-        
-        
-        
-
-        
-        
-        
-        <!-- Main Controls -->
-        <div class="flex flex-wrap items-center gap-4 mb-4 p-3 bg-white rounded-lg shadow">
             
-            <!-- View Mode -->
+            
+                   
+           
+
+
+
+            <div class="container mx-auto px-4 py-2 overflow-x-auto">
+                <div class="flex items-center gap-3">
+                    <span class="text-sm font-medium text-gray-500 whitespace-nowrap">View Mode:</span>
+                    <div id="post-types-nav" class="flex flex-wrap gap-2 p-4">
+
             <div class="flex gap-2">
                 <button onclick="setMainViewMode('feed')" class="px-3 py-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600 main-view-btn" data-mode="feed">
                     List
@@ -103,33 +103,9 @@
                     Carousel
                 </button>
             </div>
-            
-            <!-- Sort -->
-            <button onclick="toggleSortOrder()" class="px-3 py-1 bg-gray-500 text-white rounded text-sm hover:bg-gray-600" id="sortBtn">
-                Sort: Newest First
-            </button>
-            
-            <!-- Items Per Page -->
-            <div class="flex items-center gap-2">
-                <label class="text-sm text-gray-700">Items:</label>
-                <input type="number" id="itemsPerPageInput" min="1" max="20" value="5" 
-                       class="w-16 px-2 py-1 border rounded text-sm" 
-                       onchange="updateItemsPerPage()">
-            </div>
-            
-            <!-- Load More Toggle -->
-            <div class="flex items-center gap-2">
-                <label class="text-sm text-gray-700">Load More:</label>
-                <div class="relative inline-block w-10 mr-2 align-middle select-none">
-                    <input type="checkbox" id="loadMoreToggle" checked
-                           class="toggle-checkbox absolute block w-4 h-4 rounded-full bg-white border-4 appearance-none cursor-pointer"
-                           onchange="toggleLoadMore()"/>
-                    <label for="loadMoreToggle" class="toggle-label block overflow-hidden h-4 rounded-full bg-blue-500 cursor-pointer"></label>
-                </div>
-            </div>
-            
-            <!-- Item Size Control -->
-            <div class="flex items-center gap-2">
+
+             <!-- Item Size Control -->
+             <div class="flex items-center gap-2">
                 <label class="text-sm text-gray-700">Size:</label>
                 <div class="flex bg-gray-100 rounded-lg p-1">
                     <button onclick="setItemSize('small')" class="px-3 py-1 rounded text-xs font-medium transition-colors size-btn" data-size="small">
@@ -143,7 +119,41 @@
                     </button>
                 </div>
             </div>
+
+            </div></div></div>
             
+            <div class="container mx-auto px-4 py-2 overflow-x-auto">
+                <div class="flex items-center gap-3">
+                    <span class="text-sm font-medium text-gray-500 whitespace-nowrap">Post Types:</span>
+                    <div id="post-types-nav" class="flex flex-wrap gap-2 p-4">
+                        
+                        <!-- Sort -->
+            <button onclick="toggleSortOrder()" class="px-3 py-1 bg-gray-500 text-white rounded text-sm hover:bg-gray-600" id="sortBtn">
+                Sort: Newest First
+            </button>
+            
+            <!-- Items Per Page -->
+            <div class="flex items-center gap-2">
+                <label class="text-sm text-gray-700">Items:</label>
+                <input type="number" id="itemsPerPageInput" min="1" max="20" value="5" 
+                       class="w-16 px-2 py-1 border rounded text-sm" 
+                       onchange="updateItemsPerPage()">
+            </div>
+
+
+            
+            <!-- Load More Toggle -->
+            <div class="flex items-center gap-2">
+                <label class="text-sm text-gray-700">Load More:</label>
+                <div class="relative inline-block w-10 mr-2 align-middle select-none">
+                    <input type="checkbox" id="loadMoreToggle" checked
+                           class="toggle-checkbox absolute block w-4 h-4 rounded-full bg-white border-4 appearance-none cursor-pointer"
+                           onchange="toggleLoadMore()"/>
+                    <label for="loadMoreToggle" class="toggle-label block overflow-hidden h-4 rounded-full bg-blue-500 cursor-pointer"></label>
+                </div>
+            </div>
+
+              
             <!-- API Source Control -->
             <div class="flex items-center gap-2">
                 <label class="text-sm text-gray-700">API Source:</label>
@@ -161,7 +171,22 @@
                        placeholder="https://example.com/wp-json/wp/v2" 
                        onchange="updateCustomApiUrl()">
             </div>
+
+            </div></div></div>
+            
+           
+          
+
+
         </div>
+        
+        
+        
+
+        
+        
+        
+      
 
     </header>
     
