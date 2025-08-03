@@ -843,6 +843,11 @@ function renderPageView() {
             .sort(([keyA], [keyB]) => keyA.localeCompare(keyB))
         : [];
     
+    // Check if we have location data in ACF fields
+    const locationData = displayAcfFields.find(([key, value]) => value && typeof value === 'object' && 'lat' in value && 'lng' in value);
+    const hasLocationData = !!locationData;
+    const nonLocationFields = displayAcfFields.filter(([key, value]) => !(value && typeof value === 'object' && 'lat' in value && 'lng' in value));
+    
     document.getElementById('popoverContent').innerHTML = `
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div class="lg:col-span-2 space-y-6">
@@ -853,18 +858,31 @@ function renderPageView() {
                     <div class="prose max-w-none">${currentItem.content?.rendered || currentItem.description?.rendered || ''}</div>
                 </div>
                 
-                ${displayAcfFields.length > 0 ? `
+                ${hasLocationData ? `
+                    <div class="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                        <h3 class="text-lg font-semibold p-4 border-b border-gray-200 flex items-center">
+                            <svg class="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                            </svg>
+                            Location
+                        </h3>
+                        ${renderLocationData(locationData[1])}
+                    </div>
+                ` : ''}
+                
+                ${nonLocationFields.length > 0 ? `
                     <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
                         <h3 class="text-lg font-semibold mb-3 flex items-center">
                             <svg class="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
                             </svg>
-                            Custom Fields
+                            Additional Information
                         </h3>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                            ${displayAcfFields.map(([key, value]) => {
+                            ${nonLocationFields.map(([key, value]) => {
                                 const displayKey = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-                                let displayValue = formatAcfValue(value);
+                                let displayValue = formatAcfValue(value, key);
                                 
                                 return `
                                     <div class="bg-white p-3 rounded border border-gray-200">
@@ -892,8 +910,104 @@ function renderPageView() {
     `;
 }
 
+// Render location data with Google Map
+function renderLocationData(locationData) {
+    if (!locationData || !locationData.lat || !locationData.lng) return '';
+    
+    const { 
+        address, 
+        lat, 
+        lng, 
+        street_number, 
+        street_name, 
+        city, 
+        state_short, 
+        post_code, 
+        country,
+        place_id
+    } = locationData;
+    
+    // Generate Google Maps embed URL with marker
+    const mapUrl = `https://www.google.com/maps/embed/v1/place?
+        key=AIzaSyDGO9Rzc6uh9MkB3jT2xZOw-1u9fGeiIRc&
+        q=${encodeURIComponent(address)}&
+        center=${lat},${lng}&
+        zoom=15&
+        maptype=roadmap&
+        marker=${lat},${lng}`.replace(/\s+/g, '');
+    
+    // Generate Google Maps link
+    const googleMapsLink = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}&query_place_id=${place_id}`;
+    
+    return `
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+            <div>
+                <h3 class="text-lg font-semibold mb-3 flex items-center">
+                    <svg class="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                    </svg>
+                    Location Details
+                </h3>
+                <div class="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                    <table class="w-full">
+                        <tbody class="divide-y divide-gray-200">
+                            ${street_number ? `
+                                <tr>
+                                    <td class="py-2 px-4 text-sm font-medium text-gray-500 bg-gray-50 w-1/3">Address</td>
+                                    <td class="py-2 px-4 text-sm text-gray-900">
+                                        ${street_number} ${street_name}
+                                    </td>
+                                </tr>
+                            ` : ''}
+                            ${city || state_short || post_code ? `
+                                <tr>
+                                    <td class="py-2 px-4 text-sm font-medium text-gray-500 bg-gray-50 w-1/3">Location</td>
+                                    <td class="py-2 px-4 text-sm text-gray-900">
+                                        ${[city, state_short, post_code].filter(Boolean).join(', ')}
+                                    </td>
+                                </tr>
+                            ` : ''}
+                            ${country ? `
+                                <tr>
+                                    <td class="py-2 px-4 text-sm font-medium text-gray-500 bg-gray-50 w-1/3">Country</td>
+                                    <td class="py-2 px-4 text-sm text-gray-900">${country}</td>
+                                </tr>
+                            ` : ''}
+                            <tr>
+                                <td class="py-2 px-4 text-sm font-medium text-gray-500 bg-gray-50 w-1/3">Coordinates</td>
+                                <td class="py-2 px-4 text-sm text-gray-900">
+                                    ${lat.toFixed(6)}, ${lng.toFixed(6)}
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <div class="p-4 border-t border-gray-200">
+                        <a href="${googleMapsLink}" target="_blank" class="inline-flex items-center text-sm text-blue-600 hover:text-blue-800 hover:underline">
+                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+                            </svg>
+                            Open in Google Maps
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="h-64 md:h-full rounded-lg overflow-hidden border border-gray-200">
+                <iframe 
+                    width="100%" 
+                    height="100%" 
+                    frameborder="0" 
+                    style="border:0" 
+                    src="${mapUrl}" 
+                    allowfullscreen>
+                </iframe>
+            </div>
+        </div>
+    `;
+}
+
 // Helper function to format ACF field values for display
-function formatAcfValue(value) {
+function formatAcfValue(value, key = '') {
     if (value === null || value === undefined) return '';
     
     // Handle arrays and objects
@@ -912,6 +1026,11 @@ function formatAcfValue(value) {
     
     // Handle objects
     if (typeof value === 'object') {
+        // Check for ACF Google Map field
+        if (value.lat && value.lng) {
+            return renderLocationData(value);
+        }
+        
         // Check for common ACF field types
         if (value.url) {
             // Image or file field
