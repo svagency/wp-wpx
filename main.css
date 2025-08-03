@@ -1,0 +1,38 @@
+/* Main styles for the WordPress API Feed */
+.fade-in { animation: fadeIn 0.2s ease-out forwards; }
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.carousel-slide { transition: transform 0.3s ease; }
+.grid-view { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); }
+.toggle-checkbox:checked { @apply right-0 border-blue-500; }
+.toggle-checkbox:checked + .toggle-label { @apply bg-blue-500; }
+
+/* Size-specific styles */
+.items-small .grid-view { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
+.items-large .grid-view { grid-template-columns: repeat(auto-fill, minmax(400px, 1fr)); }
+
+/* Small size styles */
+.items-small .feed-item { @apply p-2; }
+.items-small .feed-item h2 { @apply text-sm font-medium; }
+.items-small .feed-item .feed-image { @apply w-12 h-12; }
+.items-small .feed-item .feed-content { @apply text-xs; }
+
+.items-small .grid-item { @apply p-2; }
+.items-small .grid-item h3 { @apply text-sm font-medium; }
+.items-small .grid-item .grid-image { @apply h-24; }
+.items-small .grid-item .grid-content { @apply text-xs; }
+
+/* Large size styles */
+.items-large .feed-item { @apply p-6; }
+.items-large .feed-item h2 { @apply text-2xl font-bold; }
+.items-large .feed-item .feed-image { @apply w-32 h-32; }
+.items-large .feed-item .feed-content { @apply text-base; }
+
+.items-large .grid-item { @apply p-6; }
+.items-large .grid-item h3 { @apply text-xl font-bold; }
+.items-large .grid-item .grid-image { @apply h-64; }
+.items-large .grid-item .grid-content { @apply text-base; }
+
+/* Medium size (default) - no additional styles needed */
