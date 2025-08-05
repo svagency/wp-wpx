@@ -131,10 +131,24 @@ const observer = new IntersectionObserver((entries) => {
 async function fetchPostTypes() {
     try {
         // Use the base API URL without the /wp/v2 part
-        const apiBase = wpApiBase.replace(/\/wp\/v2$/, '');
-        console.log('Fetching post types from:', apiBase);
+        // Construct the correct REST API URL for post types
+        let baseUrl = wpApiBase;
         
-        const response = await fetch(`${apiBase}/types`);
+        // If the URL contains /wp-json/, use that as the base
+        if (wpApiBase.includes('/wp-json/')) {
+            baseUrl = wpApiBase.split('/wp-json/')[0] + '/wp-json';
+        } 
+        // If it's just the site URL, append /wp-json
+        else if (!wpApiBase.endsWith('/wp-json') && !wpApiBase.endsWith('/wp-json/')) {
+            baseUrl = wpApiBase.endsWith('/') 
+                ? wpApiBase + 'wp-json' 
+                : wpApiBase + '/wp-json';
+        }
+        
+        const typesEndpoint = `${baseUrl}/wp/v2/types`;
+        console.log('Fetching post types from:', typesEndpoint);
+        
+        const response = await fetch(typesEndpoint);
         if (!response.ok) {
             console.error('Failed to fetch post types:', response.status, response.statusText);
             throw new Error(`Failed to fetch post types: ${response.status} ${response.statusText}`);
@@ -155,15 +169,39 @@ async function fetchPostTypes() {
             'block-types'
         ];
         
-        // Get available post types and their REST bases
-        const postTypesWithBases = Object.keys(types).filter(type => 
-            types[type].rest_base && 
-            !excludedTypes.includes(type) &&
-            !excludedTypes.includes(types[type].rest_base)
-        ).map(type => ({
-            name: type,
-            restBase: types[type].rest_base
-        }));
+        // Get all post types and their REST bases
+        const postTypesWithBases = [];
+        
+        // First, log all available post types for debugging
+        console.log('Available post types from API:', types);
+        
+        // Process each post type
+        Object.entries(types).forEach(([type, typeData]) => {
+            // Skip excluded system types
+            if (excludedTypes.includes(type) || !typeData.rest_base) {
+                console.log(`Skipping post type: ${type}`, { 
+                    excluded: excludedTypes.includes(type),
+                    hasRestBase: !!typeData.rest_base,
+                    typeData 
+                });
+                return;
+            }
+            
+            console.log(`Including post type: ${type}`, { 
+                public: typeData.public,
+                show_in_rest: typeData.show_in_rest,
+                show_ui: typeData.show_ui,
+                rest_base: typeData.rest_base
+            });
+            
+            postTypesWithBases.push({
+                name: type,
+                restBase: typeData.rest_base,
+                ...typeData
+            });
+        });
+        
+        console.log('Processed post types:', postTypesWithBases);
         
         // Store the mapping for later use
         window.postTypeMapping = {};
