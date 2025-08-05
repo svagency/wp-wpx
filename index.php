@@ -22,7 +22,7 @@ $template_dir = $is_wordpress ? get_template_directory_uri() : '.';
 $parent_site_url = $is_wordpress ? esc_url(home_url('/')) : '';
 
 // Load the template HTML file
-$template_path = __DIR__ . '/template.html';
+$template_path = __DIR__ . '/app/index.html';
 $template_content = file_get_contents($template_path);
 
 // Replace placeholders with dynamic values

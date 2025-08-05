@@ -12,42 +12,83 @@ let activeCategory = 'all';
 let activeTag = 'all';
 let showFeaturedImages = true; // Default to showing featured images
 
+// Predefined sites configuration
+const SITES = {
+    'current': {
+        name: 'Current Site',
+        url: null // Will be set from settings
+    },
+    'parent': {
+        name: 'Parent Site',
+        url: null // Will be set from settings
+    },
+    'svagency': {
+        name: 'SV Agency',
+        url: 'https://sv.agency/wp-json/wp/v2'
+    },
+    'maxfx': {
+        name: 'MaxFX',
+        url: 'https://maxfx.store/wp-json/wp/v2'
+    },
+    'coingeek': {
+        name: 'CoinGeek',
+        url: 'https://coingeek.com/wp-json/wp/v2'
+    },
+    'custom': {
+        name: 'Custom URL',
+        url: ''
+    }
+};
+
 // Load settings from JSON
 const settings = JSON.parse(document.getElementById('appSettings').textContent);
 
-// Get API base path from settings or use default
-let wpApiBase = settings.wpApiBase || 'https://sv.agency/wp-json/wp/v2';
+// Set current and parent site URLs in the SITES config
+SITES.current.url = settings.wpApiBase || 'https://sv.agency/wp-json/wp/v2';
+SITES.parent.url = SITES.current.url.replace(/\/wp-json\/wp\/v2$/, '').replace(/\/[^/]+$/, '') + '/wp-json/wp/v2';
 
-// Store the original API base for reference
-const originalApiBase = wpApiBase;
-
-// Store parent site API base (remove /wp-json/wp/v2 and add parent site path)
-const parentApiBase = originalApiBase.replace(/\/wp-json\/wp\/v2$/, '').replace(/\/[^/]+$/, '') + '/wp-json/wp/v2';
-
-// Store custom API URL if set
-let customApiUrl = '';
+// Initialize API base URL
+let wpApiBase = SITES.current.url;
+let currentSiteId = 'current';
 
 // Initialize UI from settings
 function initSettings() {
-    document.getElementById('loadMoreToggle').checked = settings.loadMore;
-    document.getElementById('itemsPerPageInput').value = settings.itemsPerPage;
-    document.getElementById('sortBtn').textContent = `Sort: ${settings.sortDescending ? 'Newest First' : 'Oldest First'}`;
-    setMainViewMode(settings.mainViewMode);
-    setItemSize(settings.itemSize);
+    // Set up load more toggle
+    const loadMoreToggle = document.getElementById('loadMoreToggle');
+    if (loadMoreToggle) {
+        loadMoreToggle.checked = settings.loadMore !== false; // Default to true if not set
+    }
     
-    // Initialize API source selection
-    if (settings.apiSource) {
-        document.getElementById('apiSourceSelect').value = settings.apiSource;
-        
-        // If custom URL is selected, show the custom URL input
-        if (settings.apiSource === 'custom' && settings.customApiUrl) {
-            customApiUrl = settings.customApiUrl;
-            document.getElementById('customApiUrlInput').value = customApiUrl;
-            document.getElementById('customApiUrlContainer').classList.remove('hidden');
-        }
-        
-        // Set the API base URL based on the selected source
-        updateApiBaseUrl();
+    // Set up items per page
+    const itemsPerPageInput = document.getElementById('itemsPerPageInput');
+    if (itemsPerPageInput) {
+        itemsPerPageInput.value = settings.itemsPerPage || 5;
+    }
+    
+    // Set up sort button
+    const sortBtn = document.getElementById('sortBtn');
+    if (sortBtn) {
+        settings.sortDescending = settings.sortDescending !== false; // Default to true if not set
+        sortBtn.textContent = `Sort: ${settings.sortDescending ? 'Newest First' : 'Oldest First'}`;
+    }
+    
+    // Set up view mode
+    setMainViewMode(settings.mainViewMode || 'feed');
+    
+    // Set up item size
+    setItemSize(settings.itemSize || 'medium');
+    
+    // Set up featured images toggle
+    const featuredImagesToggle = document.getElementById('featuredImagesToggle');
+    if (featuredImagesToggle) {
+        showFeaturedImages = settings.showFeaturedImages !== false; // Default to true if not set
+        featuredImagesToggle.checked = showFeaturedImages;
+        featuredImagesToggle.addEventListener('change', function() {
+            showFeaturedImages = this.checked;
+            settings.showFeaturedImages = showFeaturedImages;
+            saveSettings();
+            renderMainView();
+        });
     }
 }
 
@@ -168,21 +209,59 @@ function renderPostTypesNav() {
     navContainer.innerHTML = buttons;
 }
 
-// Set API source
-function setApiSource(source) {
-    settings.apiSource = source;
+// Initialize API source dropdown
+function initApiSourceDropdown() {
+    const select = document.getElementById('apiSourceSelect');
+    select.innerHTML = ''; // Clear existing options
+    
+    // Add all site options
+    Object.entries(SITES).forEach(([id, site]) => {
+        const option = document.createElement('option');
+        option.value = id;
+        option.textContent = site.name;
+        select.appendChild(option);
+    });
+    
+    // Set the default selected value
+    if (settings.apiSource && SITES[settings.apiSource]) {
+        select.value = settings.apiSource;
+    } else {
+        select.value = 'current';
+        settings.apiSource = 'current';
+    }
     
     // Show/hide custom URL input based on selection
-    if (source === 'custom') {
-        document.getElementById('customApiUrlContainer').classList.remove('hidden');
-    } else {
-        document.getElementById('customApiUrlContainer').classList.add('hidden');
+    updateCustomUrlVisibility();
+}
+
+// Update custom URL input visibility
+function updateCustomUrlVisibility() {
+    const isCustom = document.getElementById('apiSourceSelect').value === 'custom';
+    document.getElementById('customApiUrlContainer').classList.toggle('hidden', !isCustom);
+}
+
+// Set API source
+function setApiSource(sourceId) {
+    if (!SITES[sourceId]) {
+        console.error('Invalid site ID:', sourceId);
+        return;
+    }
+    
+    settings.apiSource = sourceId;
+    currentSiteId = sourceId;
+    
+    // Update UI
+    updateCustomUrlVisibility();
+    
+    // If custom source, set the URL input value
+    if (sourceId === 'custom' && settings.customApiUrl) {
+        document.getElementById('customApiUrlInput').value = settings.customApiUrl;
     }
     
     // Update the API base URL
     updateApiBaseUrl();
     
-    // Save settings to localStorage
+    // Save settings
     saveSettings();
     
     // Reset and reload content with the new API source
@@ -192,76 +271,115 @@ function setApiSource(source) {
 // Update custom API URL
 function updateCustomApiUrl() {
     const urlInput = document.getElementById('customApiUrlInput');
-    customApiUrl = urlInput.value.trim();
-    settings.customApiUrl = customApiUrl;
+    const url = urlInput.value.trim();
     
-    // Update the API base URL
-    updateApiBaseUrl();
-    
-    // Save settings to localStorage
-    saveSettings();
-    
-    // Reset and reload content with the new API URL
-    resetAndLoadContent('posts');
+    if (url) {
+        SITES.custom.url = url;
+        settings.customApiUrl = url;
+        
+        // If we're currently on the custom URL, update the API base
+        if (currentSiteId === 'custom') {
+            updateApiBaseUrl();
+            saveSettings();
+            resetAndLoadContent('posts');
+        }
+    }
 }
 
 // Update API base URL based on selected source
 function updateApiBaseUrl() {
-    switch (settings.apiSource) {
-        case 'current':
-            wpApiBase = originalApiBase;
-            break;
-        case 'parent':
-            wpApiBase = parentApiBase;
-            break;
-        case 'custom':
-            if (customApiUrl) {
-                wpApiBase = customApiUrl;
-            }
-            break;
+    const site = SITES[settings.apiSource];
+    if (site) {
+        wpApiBase = site.url;
+        console.log('API Base URL updated:', wpApiBase);
+    }
+}
+
+// Save settings to localStorage
+function saveSettings() {
+    try {
+        // Update settings from UI
+        const loadMoreToggle = document.getElementById('loadMoreToggle');
+        if (loadMoreToggle) settings.loadMore = loadMoreToggle.checked;
+        
+        const itemsPerPageInput = document.getElementById('itemsPerPageInput');
+        if (itemsPerPageInput) settings.itemsPerPage = parseInt(itemsPerPageInput.value, 10) || 5;
+        
+        const sortBtn = document.getElementById('sortBtn');
+        if (sortBtn) settings.sortDescending = sortBtn.textContent.includes('Newest');
+        
+        const activeViewBtn = document.querySelector('.main-view-btn.active');
+        if (activeViewBtn) settings.mainViewMode = activeViewBtn.dataset.mode || 'feed';
+        
+        const activeSizeBtn = document.querySelector('.size-btn.active');
+        if (activeSizeBtn) settings.itemSize = activeSizeBtn.dataset.size || 'medium';
+        
+        // Save to localStorage
+        localStorage.setItem('wpApiViewerSettings', JSON.stringify(settings));
+    } catch (error) {
+        console.error('Error saving settings:', error);
+    }
+}
+
+// Load settings from localStorage
+function loadSettings() {
+    try {
+        const savedSettings = localStorage.getItem('wpApiViewerSettings');
+        if (savedSettings) {
+            const parsed = JSON.parse(savedSettings);
+            // Merge with default settings
+            Object.assign(settings, parsed);
+            
+            // Ensure required settings exist
+            if (typeof settings.loadMore === 'undefined') settings.loadMore = true;
+            if (!settings.itemsPerPage) settings.itemsPerPage = 5;
+            if (typeof settings.sortDescending === 'undefined') settings.sortDescending = true;
+            if (!settings.mainViewMode) settings.mainViewMode = 'feed';
+            if (!settings.itemSize) settings.itemSize = 'medium';
+            if (!settings.apiSource) settings.apiSource = 'current';
+            
+            return true;
+        }
+    } catch (error) {
+        console.error('Error loading settings:', error);
     }
     
-    console.log('API Base URL updated:', wpApiBase);
-}
-
-// Save settings to memory only (no persistence)
-function saveSettings() {
-    // Settings are only kept in memory and will reset on page refresh
-    console.log('Settings updated in memory');
-}
-
-// Load settings (no persistence)
-function loadSettings() {
-    // No settings loaded from localStorage
-    console.log('Using default settings');
+    // Default settings
+    settings.loadMore = true;
+    settings.itemsPerPage = 5;
+    settings.sortDescending = true;
+    settings.mainViewMode = 'feed';
+    settings.itemSize = 'medium';
+    settings.apiSource = 'current';
+    settings.showFeaturedImages = true;
+    
+    return false;
 }
 
 // Initialize app
 function init() {
-    loadSettings(); // Load settings from localStorage first
+    // Load settings from localStorage
+    loadSettings();
+    
+    // Initialize API source dropdown
+    initApiSourceDropdown();
+    
+    // Initialize UI from settings
     initSettings();
     
-    // Set up featured images toggle
-    const featuredImagesToggle = document.getElementById('featuredImagesToggle');
-    if (featuredImagesToggle) {
-        featuredImagesToggle.checked = showFeaturedImages;
-        featuredImagesToggle.addEventListener('change', function() {
-            showFeaturedImages = this.checked;
-            renderMainView(); // Re-render the view when toggle changes
-        });
-    }
-    observer.observe(document.getElementById('endMarker'));
-    updateLoadMoreButton(); // Set initial button state
-    fetchPostTypes(); // Fetch post types first
+    // Fetch available post types
+    fetchPostTypes();
+    
+    // Set up event listeners
+    document.getElementById('settingsBtn').addEventListener('click', () => {
+        alert('Settings dialog will be implemented here');
+    });
+    
+    // Initialize the app
     resetAndLoadContent('posts');
-}
-
-// Toggle load more setting
-function toggleLoadMore() {
-    settings.loadMore = !settings.loadMore;
-    document.querySelector('.toggle-label').classList.toggle('bg-blue-500', settings.loadMore);
-    document.querySelector('.toggle-label').classList.toggle('bg-gray-300', !settings.loadMore);
-    saveSettings(); // Save settings to localStorage
+    
+    // Set up intersection observer for infinite scroll
+    observer.observe(document.getElementById('endMarker'));
 }
 
 // Update items per page setting
@@ -270,6 +388,18 @@ function updateItemsPerPage() {
     settings.itemsPerPage = Math.min(Math.max(value, 1), 20);
     document.getElementById('itemsPerPageInput').value = settings.itemsPerPage;
     saveSettings(); // Save settings to localStorage
+}
+
+// Toggle load more setting
+function toggleLoadMore() {
+    settings.loadMore = !settings.loadMore;
+    document.querySelector('.toggle-label').classList.toggle('bg-blue-500', settings.loadMore);
+    document.querySelector('.toggle-label').classList.toggle('bg-gray-300', !settings.loadMore);
+    saveSettings(); // Save settings to localStorage
+    updateItemsCounter(); // Reset counter
+    updateLoadMoreButton(); // Reset button state
+    renderPostTypesNav(); // Update navigation active state
+    loadContent();
 }
 
 // Reset and load fresh content
@@ -283,9 +413,8 @@ function resetAndLoadContent(type) {
     activeCategory = 'all';
     activeTag = 'all';
     document.getElementById('contentFeed').innerHTML = '';
-    updateItemsCounter(); // Reset counter
-    updateLoadMoreButton(); // Reset button state
-    renderPostTypesNav(); // Update navigation active state
+    updateItemsCounter(0);
+    updateLoadMoreButton();
     loadContent();
 }
 

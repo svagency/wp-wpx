@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WordPress API Feed</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="{{TEMPLATE_DIR}}/main.css">
+    <link rel="stylesheet" href="{{TEMPLATE_DIR}}/app/main.css">
 </head>
 <body class="bg-gray-50 min-h-screen">
     <!-- Fixed Header -->
@@ -158,9 +158,7 @@
             <div class="flex items-center gap-2">
                 <label class="text-sm text-gray-700">API Source:</label>
                 <select id="apiSourceSelect" class="px-2 py-1 border rounded text-sm" onchange="setApiSource(this.value)">
-                    <option value="current">Current Site</option>
-                    <option value="parent">Parent Site</option>
-                    <option value="custom">Custom URL</option>
+                    <!-- Options will be populated by JavaScript -->
                 </select>
             </div>
             
@@ -168,8 +166,9 @@
             <div id="customApiUrlContainer" class="flex items-center gap-2 hidden">
                 <label class="text-sm text-gray-700">Custom URL:</label>
                 <input type="text" id="customApiUrlInput" class="w-48 px-2 py-1 border rounded text-sm" 
-                       value="https://ws.agency" 
-                       onchange="updateCustomApiUrl()">
+                       placeholder="https://example.com/wp-json/wp/v2"
+                       onchange="updateCustomApiUrl()"
+                       onkeyup="if(event.key === 'Enter') updateCustomApiUrl()">
             </div>
 
             </div></div></div>
@@ -288,6 +287,6 @@
         </div>
     </div>
 
-    <script src="{{TEMPLATE_DIR}}/script.js"></script>
+    <script src="{{TEMPLATE_DIR}}/app/script.js"></script>
 </body>
 </html>
