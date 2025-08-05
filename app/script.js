@@ -1704,30 +1704,7 @@ function applyFilters() {
     updateItemsCounter(visibleCount);
 }
 
-// Export initialization function for init.js to call
-window.initializeApp = function() {
-    console.log('Initializing main application...');
-    
-    // Check if settings element exists
-    const settingsElement = document.getElementById('appSettings');
-    if (!settingsElement) {
-        console.error('App settings element not found');
-        return;
-    }
-    
-    try {
-        // Load settings from JSON
-        const settings = JSON.parse(settingsElement.textContent);
-        
-        // Update SITES with current and parent URLs
-        SITES.current.url = settings.wpApiBase || 'https://sv.agency/wp-json/wp/v2';
-        SITES.parent.url = SITES.current.url.replace(/\/wp-json\/wp\/v2$/, '').replace(/\/[^/]+$/, '') + '/wp-json/wp/v2';
-        
-        console.log('App settings loaded:', settings);
-        
-        // Initialize the app
-        init();
-    } catch (error) {
-        console.error('Failed to initialize app:', error);
-    }
-};
+// Start the app
+document.addEventListener('DOMContentLoaded', function() {
+    init();
+});
