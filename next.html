@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WordPress API Feed</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="app/main.css">
+
+    <!-- Settings Storage -->
+    <script type="application/json" id="appSettings">
+        {
+            "loadMore": true,
+            "itemsPerPage": 5,
+            "sortDescending": true,
+            "mainViewMode": "feed",
+            "contentViewMode": "page",
+            "itemSize": "medium",
+            "wpApiBase": "{{WP_API_BASE}}",
+            "apiSource": "current"
+        }
+    </script>
+
+</head>
+
+<body class="bg-gray-50 min-h-screen">
+
+    <!-- Fixed Header -->
+    <header id="header-container" class="fixed top-0 left-0 right-0 z-50 bg-white shadow-md">
+        <div class="loader"></div>
+        <p>Loading header...</p>
+    </header>
+
+    <!-- Main Content -->
+    <div class="pt-48 px-4 pb-8">
+        <div class="max-w-6xl mx-auto">
+            <!-- Content Feed -->
+            <div id="contentContainer">
+                <div id="contentFeed" class="space-y-4"></div>
+            </div>
+            <!-- Loading Indicator -->
+            <div id="loading" class="text-center py-8 hidden">
+                <div class="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+            </div>
+            <!-- End of content marker -->
+            <div id="endMarker" class="h-10"></div>
+        </div>
+
+        <!-- Popover Overlay with Animations -->
+        <div id="popoverOverlay" class="fixed inset-0 bg-black bg-opacity-0 z-50 hidden items-center justify-center p-4 transition-all duration-300 ease-in-out">
+            <div class="loader"></div>
+            <p>Loading header...</p>
+        </div>
+
+        <!-- Initialize the application -->
+    <script src="app/init.js" defer></script>
+    </body>
+</html>
