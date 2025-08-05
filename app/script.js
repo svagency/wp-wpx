@@ -125,32 +125,7 @@ const observer = new IntersectionObserver((entries) => {
         (settings.mainViewMode === 'feed' || settings.mainViewMode === 'grid')) {
         loadMoreContent();
     }
-}, { 
-    threshold: 0.1,
-    // Ensure the observer triggers even if the target is not yet scrollable
-    rootMargin: '0px 0px 50px 0px' // Add 50px margin to trigger before reaching the bottom
-});
-
-// Function to check if we need to load more content immediately
-function checkInitialLoad() {
-    const sentinel = document.getElementById('endMarker');
-    if (!sentinel) return;
-    
-    // Check if the sentinel is already visible (no scrollbar needed)
-    const rect = sentinel.getBoundingClientRect();
-    const isVisible = (
-        rect.top >= 0 &&
-        rect.left >= 0 &&
-        rect.bottom <= (window.innerHeight || document.documentElement.clientHeight) &&
-        rect.right <= (window.innerWidth || document.documentElement.clientWidth)
-    );
-    
-    // If sentinel is visible and we have more content to load
-    if (isVisible && !isLoading && hasMore && settings.loadMore && 
-        (settings.mainViewMode === 'feed' || settings.mainViewMode === 'grid')) {
-        loadMoreContent();
-    }
-}
+}, { threshold: 0.1 });
 
 // Fetch available post types
 async function fetchPostTypes() {
@@ -473,7 +448,7 @@ function init() {
     fetchPostTypes();
     
     // Set up event listeners
-    document.getElementById('settingsBtn')?.addEventListener('click', () => {
+    document.getElementById('settingsBtn').addEventListener('click', () => {
         alert('Settings dialog will be implemented here');
     });
     
@@ -481,16 +456,7 @@ function init() {
     resetAndLoadContent('posts');
     
     // Set up intersection observer for infinite scroll
-    const sentinel = document.getElementById('endMarker');
-    if (sentinel) {
-        observer.observe(sentinel);
-        
-        // Check if we need to load more content immediately (no scrollbar case)
-        // Use a small timeout to ensure the DOM is fully updated
-        setTimeout(() => {
-            checkInitialLoad();
-        }, 100);
-    }
+    observer.observe(document.getElementById('endMarker'));
 }
 
 // Update items per page setting
