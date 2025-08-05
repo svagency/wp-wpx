@@ -14,29 +14,30 @@ let showFeaturedImages = true; // Default to showing featured images
 
 // Predefined sites configuration
 const SITES = {
-    'current': {
+    current: { 
+        id: 'current',
         name: 'Current Site',
-        url: null // Will be set from settings
+        url: '' // Will be set at runtime
     },
-    'parent': {
+    parent: { 
+        id: 'parent',
         name: 'Parent Site',
-        url: null // Will be set from settings
+        url: '' // Will be set at runtime
     },
-    'svagency': {
+    svagency: { 
+        id: 'svagency',
         name: 'SV Agency',
         url: 'https://sv.agency/wp-json/wp/v2'
     },
-    'maxfx': {
+    maxfx: { 
+        id: 'maxfx',
         name: 'MaxFX',
         url: 'https://maxfx.store/wp-json/wp/v2'
     },
-    'coingeek': {
+    coingeek: { 
+        id: 'coingeek',
         name: 'CoinGeek',
         url: 'https://coingeek.com/wp-json/wp/v2'
-    },
-    'custom': {
-        name: 'Custom URL',
-        url: ''
     }
 };
 
@@ -212,86 +213,66 @@ function renderPostTypesNav() {
 // Initialize API source dropdown
 function initApiSourceDropdown() {
     const select = document.getElementById('apiSourceSelect');
-    select.innerHTML = ''; // Clear existing options
+    if (!select) return;
     
-    // Add all site options
+    // Clear existing options
+    select.innerHTML = '';
+    
+    // Add options from SITES object (excluding custom)
     Object.entries(SITES).forEach(([id, site]) => {
-        const option = document.createElement('option');
-        option.value = id;
-        option.textContent = site.name;
-        select.appendChild(option);
+        if (site.name && id !== 'custom') {  // Skip custom option
+            const option = document.createElement('option');
+            option.value = id;
+            option.textContent = site.name;
+            select.appendChild(option);
+        }
     });
     
-    // Set the default selected value
-    if (settings.apiSource && SITES[settings.apiSource]) {
+    // Set the selected value (default to current if invalid)
+    if (settings.apiSource && SITES[settings.apiSource] && settings.apiSource !== 'custom') {
         select.value = settings.apiSource;
     } else {
         select.value = 'current';
         settings.apiSource = 'current';
     }
     
-    // Show/hide custom URL input based on selection
-    updateCustomUrlVisibility();
-}
-
-// Update custom URL input visibility
-function updateCustomUrlVisibility() {
-    const isCustom = document.getElementById('apiSourceSelect').value === 'custom';
-    document.getElementById('customApiUrlContainer').classList.toggle('hidden', !isCustom);
+    // Update the API base URL based on the selected source
+    updateApiBaseUrl();
 }
 
 // Set API source
-function setApiSource(sourceId) {
-    if (!SITES[sourceId]) {
-        console.error('Invalid site ID:', sourceId);
+function setApiSource(source) {
+    if (!SITES[source] || source === 'custom') {
+        console.error('Invalid API source:', source);
         return;
     }
     
-    settings.apiSource = sourceId;
-    currentSiteId = sourceId;
+    settings.apiSource = source;
+    saveSettings();
     
-    // Update UI
-    updateCustomUrlVisibility();
-    
-    // If custom source, set the URL input value
-    if (sourceId === 'custom' && settings.customApiUrl) {
-        document.getElementById('customApiUrlInput').value = settings.customApiUrl;
+    // Update the dropdown
+    const select = document.getElementById('apiSourceSelect');
+    if (select) {
+        select.value = source;
     }
     
     // Update the API base URL
     updateApiBaseUrl();
     
-    // Save settings
-    saveSettings();
-    
-    // Reset and reload content with the new API source
+    // Reset and reload content
     resetAndLoadContent('posts');
-}
-
-// Update custom API URL
-function updateCustomApiUrl() {
-    const urlInput = document.getElementById('customApiUrlInput');
-    const url = urlInput.value.trim();
-    
-    if (url) {
-        SITES.custom.url = url;
-        settings.customApiUrl = url;
-        
-        // If we're currently on the custom URL, update the API base
-        if (currentSiteId === 'custom') {
-            updateApiBaseUrl();
-            saveSettings();
-            resetAndLoadContent('posts');
-        }
-    }
 }
 
 // Update API base URL based on selected source
 function updateApiBaseUrl() {
     const site = SITES[settings.apiSource];
-    if (site) {
+    if (site && site.url) {
         wpApiBase = site.url;
-        console.log('API Base URL updated:', wpApiBase);
+        console.log('API Base URL set to:', wpApiBase);
+    } else {
+        console.error('Invalid API source or missing URL:', settings.apiSource);
+        // Fallback to current site if the selected source is invalid
+        wpApiBase = SITES.current.url;
     }
 }
 
