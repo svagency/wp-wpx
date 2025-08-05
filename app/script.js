@@ -32,7 +32,7 @@ const SITES = {
     maxfx: { 
         id: 'maxfx',
         name: 'MaxFX',
-        url: 'https://maxfx.store/wp-json/wp/v2'
+        url: 'https://maxfx.local/wp-json/wp/v2'
     },
     coingeek: { 
         id: 'coingeek',
@@ -1486,12 +1486,20 @@ function toggleSortOrder() {
 
 // Update categories and tags from items
 function updateCategoriesAndTags(items) {
+    allCategories = [];
+    allTags = [];
+    
     items.forEach(item => {
         // Add categories
         if (item.categories && Array.isArray(item.categories)) {
             item.categories.forEach(cat => {
-                if (!allCategories.some(c => c.id === cat.id)) {
-                    allCategories.push(cat);
+                if (cat && cat.id && cat.name && cat.name.trim() !== '') {
+                    if (!allCategories.some(c => c.id === cat.id)) {
+                        allCategories.push({
+                            id: cat.id.toString(),
+                            name: cat.name.trim()
+                        });
+                    }
                 }
             });
         }
@@ -1499,12 +1507,21 @@ function updateCategoriesAndTags(items) {
         // Add tags
         if (item.tags && Array.isArray(item.tags)) {
             item.tags.forEach(tag => {
-                if (!allTags.some(t => t.id === tag.id)) {
-                    allTags.push(tag);
+                if (tag && tag.id && tag.name && tag.name.trim() !== '') {
+                    if (!allTags.some(t => t.id === tag.id)) {
+                        allTags.push({
+                            id: tag.id.toString(),
+                            name: tag.name.trim()
+                        });
+                    }
                 }
             });
         }
     });
+    
+    // Sort categories and tags by name
+    allCategories.sort((a, b) => a.name.localeCompare(b.name));
+    allTags.sort((a, b) => a.name.localeCompare(b.name));
 }
 
 // Update navigation menus with categories and tags
@@ -1518,25 +1535,33 @@ function updateNavigationMenus() {
     categoryNav.innerHTML = '<button class="category-filter px-3 py-1 text-xs rounded-full bg-blue-600 text-white hover:bg-blue-700 font-medium" data-category="all">All</button>';
     tagNav.innerHTML = '<button class="tag-filter px-3 py-1 text-xs rounded-full bg-green-600 text-white hover:bg-green-700 font-medium" data-tag="all">All</button>';
     
-    // Add category buttons
-    allCategories.forEach(cat => {
-        const button = document.createElement('button');
-        button.className = 'category-filter px-3 py-1 text-xs rounded-full bg-blue-100 text-blue-800 hover:bg-blue-200';
-        button.textContent = cat.name;
-        button.dataset.category = cat.id;
-        categoryNav.appendChild(button);
-    });
+    // Add category buttons if we have valid categories
+    if (allCategories && allCategories.length > 0) {
+        allCategories.forEach(cat => {
+            if (cat && cat.name && cat.id) {
+                const button = document.createElement('button');
+                button.className = 'category-filter px-3 py-1 text-xs rounded-full bg-blue-100 text-blue-800 hover:bg-blue-200';
+                button.textContent = cat.name;
+                button.dataset.category = cat.id;
+                categoryNav.appendChild(button);
+            }
+        });
+    }
     
-    // Add tag buttons
-    allTags.forEach(tag => {
-        const button = document.createElement('button');
-        button.className = 'tag-filter px-3 py-1 text-xs rounded-full bg-green-100 text-green-800 hover:bg-green-200';
-        button.textContent = tag.name;
-        button.dataset.tag = tag.id;
-        tagNav.appendChild(button);
-    });
+    // Add tag buttons if we have valid tags
+    if (allTags && allTags.length > 0) {
+        allTags.forEach(tag => {
+            if (tag && tag.name && tag.id) {
+                const button = document.createElement('button');
+                button.className = 'tag-filter px-3 py-1 text-xs rounded-full bg-green-100 text-green-800 hover:bg-green-200';
+                button.textContent = tag.name;
+                button.dataset.tag = tag.id;
+                tagNav.appendChild(button);
+            }
+        });
+    }
     
-    // Add event listeners
+    // Add event listeners for categories
     document.querySelectorAll('.category-filter').forEach(btn => {
         btn.addEventListener('click', (e) => {
             document.querySelectorAll('.category-filter').forEach(b => {
@@ -1550,6 +1575,7 @@ function updateNavigationMenus() {
         });
     });
     
+    // Add event listeners for tags
     document.querySelectorAll('.tag-filter').forEach(btn => {
         btn.addEventListener('click', (e) => {
             document.querySelectorAll('.tag-filter').forEach(b => {
