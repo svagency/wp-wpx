@@ -25,6 +25,9 @@ $parent_site_url = $is_wordpress ? esc_url(home_url('/')) : '';
 $template_path = __DIR__ . '/index.html';
 $template_content = file_get_contents($template_path);
 
+// Replace script paths with full URLs
+$template_content = str_replace('src="app/', 'src="' . $template_dir . '/app/', $template_content);
+
 // Replace placeholders with dynamic values
 $template_content = str_replace('{{WP_API_BASE}}', $wp_api_base, $template_content);
 $template_content = str_replace('{{TEMPLATE_DIR}}', $template_dir, $template_content);
