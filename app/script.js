@@ -274,13 +274,6 @@ function initApiSourceDropdown() {
         settings.apiSource = 'current';
     }
     
-    // Add change event listener
-    select.addEventListener('change', (e) => {
-        const newSource = e.target.value;
-        console.log('API source changed to:', newSource);
-        setApiSource(newSource);
-    });
-    
     // Update the API base URL based on the selected source
     updateApiBaseUrl();
 }
@@ -292,71 +285,20 @@ function setApiSource(source) {
         return;
     }
     
-    console.log('Setting API source to:', source);
     settings.apiSource = source;
     saveSettings();
     
-    // Show loading state
-    const contentContainer = document.getElementById('contentContainer');
-    if (contentContainer) {
-        contentContainer.innerHTML = '<div class="p-4 text-center"><div class="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto"></div><p class="mt-2 text-gray-600">Loading content...</p></div>';
+    // Update the dropdown
+    const select = document.getElementById('apiSourceSelect');
+    if (select) {
+        select.value = source;
     }
-    
-    // Reset states
-    currentPage = 1;
-    hasMore = true;
-    currentType = 'posts'; // Reset to default post type
     
     // Update the API base URL
     updateApiBaseUrl();
     
-    // Clear any existing timeouts/intervals
-    if (window.loadMoreTimeout) {
-        clearTimeout(window.loadMoreTimeout);
-    }
-    
-    // Reset the intersection observer
-    observer.disconnect();
-    
-    // Clear existing data
-    allItems = [];
-    allCategories = [];
-    allTags = [];
-    activeCategory = 'all';
-    activeTag = 'all';
-    
-    // Clear existing content containers
-    const contentFeed = document.getElementById('contentFeed');
-    if (contentFeed) contentFeed.innerHTML = '';
-    if (contentContainer) contentContainer.innerHTML = '<div id="contentFeed" class="space-y-4"></div>';
-    
-    // Update UI
-    updateItemsCounter(0);
-    updateLoadMoreButton();
-    
-    // Reload post types first
-    console.log('Fetching post types for new source...');
-    fetchPostTypes()
-        .then(() => {
-            console.log('Post types loaded:', window.availablePostTypes);
-            
-            // After post types are loaded, reset and load content with the first available type
-            const firstType = window.availablePostTypes && window.availablePostTypes.length > 0 
-                ? window.availablePostTypes[0].restBase 
-                : 'posts';
-                
-            console.log('Loading content for type:', firstType);
-            return resetAndLoadContent(firstType);
-        })
-        .catch(error => {
-            console.error('Error changing API source:', error);
-            if (contentContainer) {
-                contentContainer.innerHTML = `<div class="p-4 text-center text-red-600">
-                    <p>Error loading content from the selected source.</p>
-                    <p class="text-sm text-gray-600">${error.message || 'Unknown error'}</p>
-                </div>`;
-            }
-        });
+    // Reset and reload content
+    resetAndLoadContent('posts');
 }
 
 // Update API base URL based on selected source
@@ -481,9 +423,6 @@ function toggleLoadMore() {
 
 // Reset and load fresh content
 function resetAndLoadContent(type) {
-    console.log('Resetting and loading content for type:', type);
-    
-    // Reset state
     currentType = type;
     currentPage = 1;
     hasMore = true;
@@ -492,26 +431,9 @@ function resetAndLoadContent(type) {
     allTags = [];
     activeCategory = 'all';
     activeTag = 'all';
-    
-    // Clear content containers
-    const contentFeed = document.getElementById('contentFeed');
-    const contentContainer = document.getElementById('contentContainer');
-    
-    if (contentFeed) contentFeed.innerHTML = '';
-    if (contentContainer) contentContainer.innerHTML = '<div id="contentFeed" class="space-y-4"></div>';
-    
-    // Reset UI elements
+    document.getElementById('contentFeed').innerHTML = '';
     updateItemsCounter(0);
     updateLoadMoreButton();
-    
-    // Reinitialize the intersection observer if needed
-    const sentinel = document.getElementById('sentinel');
-    if (sentinel) {
-        observer.disconnect();
-        observer.observe(sentinel);
-    }
-    
-    // Load the content
     loadContent();
 }
 
