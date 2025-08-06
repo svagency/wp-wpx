@@ -36,3 +36,35 @@
 .items-large .grid-item .grid-content { @apply text-base; }
 
 /* Medium size (default) - no additional styles needed */
+
+
+
+
+  /* Custom scrollbar for popover */
+  #popoverContentContainer::-webkit-scrollbar {
+    width: 8px;
+}
+#popoverContentContainer::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+#popoverContentContainer::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 4px;
+}
+#popoverContentContainer::-webkit-scrollbar-thumb:hover {
+    background: #a1a1a1;
+}
+
+/* Smooth scrolling for the popover content */
+#popoverContent {
+    scroll-behavior: smooth;
+}
+
+/* Animation for the close button */
+#popoverContentContainer button[onclick="closePopover()"] {
+    transition: transform 0.2s ease, background-color 0.2s ease;
+}
+#popoverContentContainer button[onclick="closePopover()"]:hover {
+    transform: rotate(90deg);
+}
