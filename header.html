@@ -1,0 +1,168 @@
+ <!-- Top Bar -->
+ <div class="bg-white border-b border-gray-100">
+    <div class="container mx-auto px-4 py-3">
+        <div class="flex justify-between items-center">
+            <div class="flex items-center gap-4">
+                <!-- Load More Button -->
+                <button id="load-more-btn" onclick="loadMoreContent()" class="bg-green-600 text-white px-4 py-1.5 rounded-lg shadow text-sm font-semibold hover:bg-green-700 transition-colors">
+                    Load More
+                </button>
+                <!-- Items Counter -->
+                <div class="bg-blue-600 text-white px-3 py-1.5 rounded-lg shadow text-sm font-semibold">
+                    <span id="items-loaded">0</span> items
+                </div>
+                <!-- Featured Images Toggle -->
+                <div class="flex items-center gap-1">
+                    <span class="text-sm text-gray-600">Images:</span>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="featuredImagesToggle" class="sr-only peer" checked>
+                        <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                    </label>
+                </div>
+                
+                <!-- Settings Button -->
+                <button id="settingsBtn" class="p-1.5 hover:bg-gray-100 rounded">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+    
+   
+    <div class="container mx-auto px-4 py-2 overflow-x-auto">
+        <div class="flex items-center gap-3">
+
+
+
+
+
+             <!-- Category Navigation -->
+            <span class="text-sm font-medium text-gray-500 whitespace-nowrap">Categories:</span>
+            <div id="categoryNav" class="flex-1 flex gap-2 py-1 overflow-x-auto">
+                <button class="category-filter px-3 py-1 text-xs rounded-full bg-blue-600 text-white hover:bg-blue-700 font-medium whitespace-nowrap" data-category="all">All</button>
+                <!-- Categories will be populated by JavaScript -->
+            </div>
+
+
+             <!-- Tag Navigation -->
+             <span class="text-sm font-medium text-gray-500 whitespace-nowrap">Tags:</span>
+             <div id="tagNav" class="flex-1 flex gap-2 py-1 overflow-x-auto">
+                 <button class="tag-filter px-3 py-1 text-xs rounded-full bg-green-600 text-white hover:bg-green-700 font-medium whitespace-nowrap" data-tag="all">All</button>
+                 <!-- Tags will be populated by JavaScript -->
+             </div>
+
+
+              <!-- Post Types Navigation -->
+            <span class="text-sm font-medium text-gray-500 whitespace-nowrap">Post Types:</span>
+            <div id="post-types-nav" class="flex flex-wrap gap-2 p-4">
+                <!-- Loading indicator -->
+                <div class="flex items-center text-gray-500">
+                    <div class="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-blue-500 mr-2"></div>
+                    Loading post types...
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    
+    
+           
+   
+
+
+
+    <div class="container mx-auto px-4 py-2 overflow-x-auto">
+        <div class="flex items-center gap-3">
+            <span class="text-sm font-medium text-gray-500 whitespace-nowrap">View Mode:</span>
+            <div id="post-types-nav" class="flex flex-wrap gap-2 p-4">
+
+    <div class="flex gap-2">
+        <button onclick="setMainViewMode('feed')" class="px-3 py-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600 main-view-btn" data-mode="feed">
+            List
+        </button>
+        <button onclick="setMainViewMode('grid')" class="px-3 py-1 bg-gray-100 text-gray-700 rounded text-sm hover:bg-gray-200 main-view-btn" data-mode="grid">
+            Grid
+        </button>
+        <button onclick="setMainViewMode('carousel')" class="px-3 py-1 bg-gray-100 text-gray-700 rounded text-sm hover:bg-gray-200 main-view-btn" data-mode="carousel">
+            Carousel
+        </button>
+    </div>
+
+     <!-- Item Size Control -->
+     <div class="flex items-center gap-2">
+        <label class="text-sm text-gray-700">Size:</label>
+        <div class="flex bg-gray-100 rounded-lg p-1">
+            <button onclick="setItemSize('small')" class="px-3 py-1 rounded text-xs font-medium transition-colors size-btn" data-size="small">
+                Small
+            </button>
+            <button onclick="setItemSize('medium')" class="px-3 py-1 bg-white text-gray-700 rounded text-xs font-medium shadow-sm transition-colors size-btn" data-size="medium">
+                Medium
+            </button>
+            <button onclick="setItemSize('large')" class="px-3 py-1 rounded text-xs font-medium transition-colors size-btn" data-size="large">
+                Large
+            </button>
+        </div>
+    </div>
+
+
+
+
+
+    </div></div></div>
+    
+    <div class="container mx-auto px-4 py-2 overflow-x-auto">
+        <div class="flex items-center gap-3">
+            <span class="text-sm font-medium text-gray-500 whitespace-nowrap">Post Types:</span>
+            <div id="post-types-nav" class="flex flex-wrap gap-2 p-4">
+                
+                <!-- Sort -->
+    <button onclick="toggleSortOrder()" class="px-3 py-1 bg-gray-500 text-white rounded text-sm hover:bg-gray-600" id="sortBtn">
+        Sort: Newest First
+    </button>
+    
+    <!-- Items Per Page -->
+    <div class="flex items-center gap-2">
+        <label class="text-sm text-gray-700">Items:</label>
+        <input type="number" id="itemsPerPageInput" min="1" max="20" value="5" 
+               class="w-16 px-2 py-1 border rounded text-sm" 
+               onchange="updateItemsPerPage()">
+    </div>
+
+
+    
+    <!-- Load More Toggle -->
+    <div class="flex items-center gap-2">
+        <label class="text-sm text-gray-700">Load More:</label>
+        <div class="relative inline-block w-10 mr-2 align-middle select-none">
+            <input type="checkbox" id="loadMoreToggle" checked
+                   class="toggle-checkbox absolute block w-4 h-4 rounded-full bg-white border-4 appearance-none cursor-pointer"
+                   onchange="toggleLoadMore()"/>
+            <label for="loadMoreToggle" class="toggle-label block overflow-hidden h-4 rounded-full bg-blue-500 cursor-pointer"></label>
+        </div>
+    </div>
+
+      
+    <!-- API Source Control -->
+    <div class="flex items-center gap-2">
+        <label class="text-sm text-gray-700">API Source:</label>
+        <select id="apiSourceSelect" class="px-2 py-1 border rounded text-sm" onchange="setApiSource(this.value)">
+            <!-- Options will be populated by JavaScript -->
+        </select>
+    </div>
+
+    </div></div></div>
+    
+   
+  
+
+
+</div>
+
+
+
+
+

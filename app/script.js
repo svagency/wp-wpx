@@ -1,16 +1,17 @@
-// Global variables
-let currentType = 'posts';
-let currentPage = 1;
-let isLoading = false;
-let hasMore = true;
-let currentItem = null;
-let allItems = [];
-let availablePostTypes = [];
-let allCategories = [];
-let allTags = [];
-let activeCategory = 'all';
-let activeTag = 'all';
-let showFeaturedImages = true; // Default to showing featured images
+(function() {
+    // Global variables scoped to this IIFE
+    let currentType = 'posts';
+    let currentPage = 1;
+    let isLoading = false;
+    let hasMore = true;
+    let currentItem = null;
+    let allItems = [];
+    let availablePostTypes = [];
+    let allCategories = [];
+    let allTags = [];
+    let activeCategory = 'all';
+    let activeTag = 'all';
+    let showFeaturedImages = true; // Default to showing featured images
 
 // Predefined sites configuration
 const SITES = {
@@ -253,36 +254,40 @@ function initApiSourceDropdown() {
     const select = document.getElementById('apiSourceSelect');
     if (!select) return;
     
-    // Clear existing options
-    select.innerHTML = '';
-    
-    // Add options from SITES object (excluding custom)
-    Object.entries(SITES).forEach(([id, site]) => {
-        if (site.name && id !== 'custom') {  // Skip custom option
-            const option = document.createElement('option');
-            option.value = id;
-            option.textContent = site.name;
-            select.appendChild(option);
+    try {
+        // Clear existing options
+        select.innerHTML = '';
+        
+        // Add options from SITES object (excluding custom)
+        Object.entries(SITES).forEach(([id, site]) => {
+            if (site.name && id !== 'custom') {  // Skip custom option
+                const option = document.createElement('option');
+                option.value = id;
+                option.textContent = site.name;
+                select.appendChild(option);
+            }
+        });
+        
+        // Set the selected value (default to current if invalid)
+        if (settings.apiSource && SITES[settings.apiSource] && settings.apiSource !== 'custom') {
+            select.value = settings.apiSource;
+        } else {
+            select.value = 'current';
+            settings.apiSource = 'current';
         }
-    });
-    
-    // Set the selected value (default to current if invalid)
-    if (settings.apiSource && SITES[settings.apiSource] && settings.apiSource !== 'custom') {
-        select.value = settings.apiSource;
-    } else {
-        select.value = 'current';
-        settings.apiSource = 'current';
+        
+        // Add change event listener
+        select.addEventListener('change', (e) => {
+            const newSource = e.target.value;
+            console.log('API source changed to:', newSource);
+            setApiSource(newSource);
+        });
+        
+        // Update the API base URL based on the selected source
+        updateApiBaseUrl();
+    } catch (error) {
+        console.error('Error initializing API source dropdown:', error);
     }
-    
-    // Add change event listener
-    select.addEventListener('change', (e) => {
-        const newSource = e.target.value;
-        console.log('API source changed to:', newSource);
-        setApiSource(newSource);
-    });
-    
-    // Update the API base URL based on the selected source
-    updateApiBaseUrl();
 }
 
 // Set API source
@@ -1704,7 +1709,8 @@ function applyFilters() {
     updateItemsCounter(visibleCount);
 }
 
-// Start the app
-document.addEventListener('DOMContentLoaded', function() {
-    init();
-});
+    // Start the app
+    document.addEventListener('DOMContentLoaded', function() {
+        init();
+    });
+})(); // End of IIFE

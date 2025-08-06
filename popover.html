@@ -1,0 +1,29 @@
+<!-- Backdrop -->
+        <div id="popoverBackdrop" class="absolute inset-0 bg-black bg-opacity-0 transition-opacity duration-300 ease-in-out" onclick="closePopover()"></div>
+        
+        <!-- Popover Content -->
+        <div id="popoverContentContainer" class="bg-white rounded-lg shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto relative transform transition-all duration-300 ease-in-out scale-95 opacity-0 will-change-transform">
+            <!-- Close Button -->
+            <button onclick="closePopover()" class="absolute top-4 right-4 z-20 w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600 hover:text-gray-800 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+            
+            <!-- Content View Toggles -->
+            <div class="absolute top-4 left-4 flex gap-2 z-10">
+                <button onclick="setContentViewMode('page')" class="px-3 py-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600 content-view-btn" data-mode="page">
+                    Page
+                </button>
+                <button onclick="setContentViewMode('grid')" class="px-3 py-1 bg-gray-100 text-gray-700 rounded text-sm hover:bg-gray-200 content-view-btn" data-mode="grid">
+                    Blocks Grid
+                </button>
+                <button onclick="setContentViewMode('carousel')" class="px-3 py-1 bg-gray-100 text-gray-700 rounded text-sm hover:bg-gray-200 content-view-btn" data-mode="carousel">
+                    Blocks Carousel
+                </button>
+            </div>
+            
+            <!-- Content Area -->
+            <div id="popoverContent" class="p-6 pt-12"></div>
+        </div>
+    
