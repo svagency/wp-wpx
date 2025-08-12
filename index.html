@@ -12,6 +12,7 @@
     <script type="application/json" id="appSettings">
         {
             "loadMore": true,
+            "initialItemsCount": 20,
             "itemsPerPage": 5,
             "sortDescending": true,
             "mainViewMode": "feed",
@@ -24,15 +25,15 @@
 
 </head>
 
-<body class="bg-gray-50 min-h-screen flex flex-col">
-    <!-- Fixed Header -->
-    <header id="header-container" class="fixed top-0 left-0 right-0 z-50 bg-white shadow-md">
+<body class="bg-gray-50 min-h-screen">
+    <!-- Header -->
+    <header id="header-container" class="sticky top-0 left-0 right-0 z-50 bg-white shadow-md">
         <div class="loader"></div>
         <p>Loading header...</p>
     </header>
 
     <!-- Main Content -->
-    <main class="flex-grow pt-32 px-4 pb-8 mt-16">
+    <main class="px-4 pb-8">
         <div class="max-w-6xl mx-auto w-full">
             <!-- Content Feed -->
             <div id="contentContainer">
@@ -49,8 +50,23 @@
 
     <!-- Popover Overlay with Animations -->
     <div id="popoverOverlay" class="fixed inset-0 bg-black bg-opacity-0 z-50 hidden items-center justify-center p-4 transition-all duration-300 ease-in-out">
-        <div class="loader"></div>
-        <p>Loading header...</p>
+        <!-- Backdrop -->
+        <div id="popoverBackdrop" class="absolute inset-0 bg-black bg-opacity-0 transition-opacity duration-300"></div>
+        
+        <!-- Popover Content -->
+        <div id="popoverContentContainer" class="relative bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden transform transition-all duration-300 opacity-0 scale-95">
+            <button onclick="closePopover()" class="absolute top-2 right-2 p-1 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors z-10">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+            <div id="popoverContent" class="p-6 overflow-y-auto max-h-[calc(90vh-4rem)]">
+                <!-- Content will be loaded here -->
+                <div class="flex items-center justify-center h-full">
+                    <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Initialize the application -->
