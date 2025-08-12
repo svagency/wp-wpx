@@ -14,16 +14,6 @@ async function loadHTML(url, elementId) {
         return false;
     } catch (error) {
         console.error(`Error loading ${url}:`, error);
-        const element = document.getElementById(elementId);
-        if (element) {
-            element.innerHTML = `
-                <div class="p-4 bg-red-50 text-red-700 rounded">
-                    <p>Failed to load content from ${url}</p>
-                    <button onclick="loadHTML('${url}', '${elementId}')" class="mt-2 px-3 py-1 bg-red-100 hover:bg-red-200 rounded">
-                        Retry
-                    </button>
-                </div>`;
-        }
         return false;
     }
 }
