@@ -1,17 +1,16 @@
-(function() {
-    // Global variables scoped to this IIFE
-    let currentType = 'posts';
-    let currentPage = 1;
-    let isLoading = false;
-    let hasMore = true;
-    let currentItem = null;
-    let allItems = [];
-    let availablePostTypes = [];
-    let allCategories = [];
-    let allTags = [];
-    let activeCategory = 'all';
-    let activeTag = 'all';
-    let showFeaturedImages = true; // Default to showing featured images
+// Global variables
+let currentType = 'posts';
+let currentPage = 1;
+let isLoading = false;
+let hasMore = true;
+let currentItem = null;
+let allItems = [];
+let availablePostTypes = [];
+let allCategories = [];
+let allTags = [];
+let activeCategory = 'all';
+let activeTag = 'all';
+let showFeaturedImages = true; // Default to showing featured images
 
 // Predefined sites configuration
 const SITES = {
@@ -254,40 +253,29 @@ function initApiSourceDropdown() {
     const select = document.getElementById('apiSourceSelect');
     if (!select) return;
     
-    try {
-        // Clear existing options
-        select.innerHTML = '';
-        
-        // Add options from SITES object (excluding custom)
-        Object.entries(SITES).forEach(([id, site]) => {
-            if (site.name && id !== 'custom') {  // Skip custom option
-                const option = document.createElement('option');
-                option.value = id;
-                option.textContent = site.name;
-                select.appendChild(option);
-            }
-        });
-        
-        // Set the selected value (default to current if invalid)
-        if (settings.apiSource && SITES[settings.apiSource] && settings.apiSource !== 'custom') {
-            select.value = settings.apiSource;
-        } else {
-            select.value = 'current';
-            settings.apiSource = 'current';
+    // Clear existing options
+    select.innerHTML = '';
+    
+    // Add options from SITES object (excluding custom)
+    Object.entries(SITES).forEach(([id, site]) => {
+        if (site.name && id !== 'custom') {  // Skip custom option
+            const option = document.createElement('option');
+            option.value = id;
+            option.textContent = site.name;
+            select.appendChild(option);
         }
-        
-        // Add change event listener
-        select.addEventListener('change', (e) => {
-            const newSource = e.target.value;
-            console.log('API source changed to:', newSource);
-            setApiSource(newSource);
-        });
-        
-        // Update the API base URL based on the selected source
-        updateApiBaseUrl();
-    } catch (error) {
-        console.error('Error initializing API source dropdown:', error);
+    });
+    
+    // Set the selected value (default to current if invalid)
+    if (settings.apiSource && SITES[settings.apiSource] && settings.apiSource !== 'custom') {
+        select.value = settings.apiSource;
+    } else {
+        select.value = 'current';
+        settings.apiSource = 'current';
     }
+    
+    // Update the API base URL based on the selected source
+    updateApiBaseUrl();
 }
 
 // Set API source
@@ -297,71 +285,20 @@ function setApiSource(source) {
         return;
     }
     
-    console.log('Setting API source to:', source);
     settings.apiSource = source;
     saveSettings();
     
-    // Show loading state
-    const contentContainer = document.getElementById('contentContainer');
-    if (contentContainer) {
-        contentContainer.innerHTML = '<div class="p-4 text-center"><div class="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto"></div><p class="mt-2 text-gray-600">Loading content...</p></div>';
+    // Update the dropdown
+    const select = document.getElementById('apiSourceSelect');
+    if (select) {
+        select.value = source;
     }
-    
-    // Reset states
-    currentPage = 1;
-    hasMore = true;
-    currentType = 'posts'; // Reset to default post type
     
     // Update the API base URL
     updateApiBaseUrl();
     
-    // Clear any existing timeouts/intervals
-    if (window.loadMoreTimeout) {
-        clearTimeout(window.loadMoreTimeout);
-    }
-    
-    // Reset the intersection observer
-    observer.disconnect();
-    
-    // Clear existing data
-    allItems = [];
-    allCategories = [];
-    allTags = [];
-    activeCategory = 'all';
-    activeTag = 'all';
-    
-    // Clear existing content containers
-    const contentFeed = document.getElementById('contentFeed');
-    if (contentFeed) contentFeed.innerHTML = '';
-    if (contentContainer) contentContainer.innerHTML = '<div id="contentFeed" class="space-y-4"></div>';
-    
-    // Update UI
-    updateItemsCounter(0);
-    updateLoadMoreButton();
-    
-    // Reload post types first
-    console.log('Fetching post types for new source...');
-    fetchPostTypes()
-        .then(() => {
-            console.log('Post types loaded:', window.availablePostTypes);
-            
-            // After post types are loaded, reset and load content with the first available type
-            const firstType = window.availablePostTypes && window.availablePostTypes.length > 0 
-                ? window.availablePostTypes[0].restBase 
-                : 'posts';
-                
-            console.log('Loading content for type:', firstType);
-            return resetAndLoadContent(firstType);
-        })
-        .catch(error => {
-            console.error('Error changing API source:', error);
-            if (contentContainer) {
-                contentContainer.innerHTML = `<div class="p-4 text-center text-red-600">
-                    <p>Error loading content from the selected source.</p>
-                    <p class="text-sm text-gray-600">${error.message || 'Unknown error'}</p>
-                </div>`;
-            }
-        });
+    // Reset and reload content
+    resetAndLoadContent('posts');
 }
 
 // Update API base URL based on selected source
@@ -486,9 +423,6 @@ function toggleLoadMore() {
 
 // Reset and load fresh content
 function resetAndLoadContent(type) {
-    console.log('Resetting and loading content for type:', type);
-    
-    // Reset state
     currentType = type;
     currentPage = 1;
     hasMore = true;
@@ -497,26 +431,9 @@ function resetAndLoadContent(type) {
     allTags = [];
     activeCategory = 'all';
     activeTag = 'all';
-    
-    // Clear content containers
-    const contentFeed = document.getElementById('contentFeed');
-    const contentContainer = document.getElementById('contentContainer');
-    
-    if (contentFeed) contentFeed.innerHTML = '';
-    if (contentContainer) contentContainer.innerHTML = '<div id="contentFeed" class="space-y-4"></div>';
-    
-    // Reset UI elements
+    document.getElementById('contentFeed').innerHTML = '';
     updateItemsCounter(0);
     updateLoadMoreButton();
-    
-    // Reinitialize the intersection observer if needed
-    const sentinel = document.getElementById('sentinel');
-    if (sentinel) {
-        observer.disconnect();
-        observer.observe(sentinel);
-    }
-    
-    // Load the content
     loadContent();
 }
 
@@ -1709,8 +1626,30 @@ function applyFilters() {
     updateItemsCounter(visibleCount);
 }
 
-    // Start the app
-    document.addEventListener('DOMContentLoaded', function() {
+// Export initialization function for init.js to call
+window.initializeApp = function() {
+    console.log('Initializing main application...');
+    
+    // Check if settings element exists
+    const settingsElement = document.getElementById('appSettings');
+    if (!settingsElement) {
+        console.error('App settings element not found');
+        return;
+    }
+    
+    try {
+        // Load settings from JSON
+        const settings = JSON.parse(settingsElement.textContent);
+        
+        // Update SITES with current and parent URLs
+        SITES.current.url = settings.wpApiBase || 'https://sv.agency/wp-json/wp/v2';
+        SITES.parent.url = SITES.current.url.replace(/\/wp-json\/wp\/v2$/, '').replace(/\/[^/]+$/, '') + '/wp-json/wp/v2';
+        
+        console.log('App settings loaded:', settings);
+        
+        // Initialize the app
         init();
-    });
-})(); // End of IIFE
+    } catch (error) {
+        console.error('Failed to initialize app:', error);
+    }
+};
