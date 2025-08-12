@@ -33,14 +33,11 @@ async function initializeApp() {
     try {
         console.log('Starting application initialization...');
         
-        // Load header and popover first
-        const [headerLoaded, popoverLoaded] = await Promise.all([
-            loadHTML('header.html', 'header-container'),
-            loadHTML('popover.html', 'popoverOverlay')
-        ]);
+        // Load header
+        const headerLoaded = await loadHTML('header.html', 'header-container');
 
-        if (headerLoaded && popoverLoaded) {
-            console.log('UI components loaded successfully');
+        if (headerLoaded) {
+            console.log('Header loaded successfully');
             
             // Now load the main application script
             return new Promise((resolve, reject) => {
@@ -52,6 +49,7 @@ async function initializeApp() {
                     // Check if the main app initialization function exists
                     if (typeof window.initializeApp === 'function') {
                         try {
+                            // The popover will be initialized when needed via script.js
                             window.initializeApp();
                             resolve();
                         } catch (error) {
@@ -73,7 +71,7 @@ async function initializeApp() {
                 document.body.appendChild(script);
             });
         } else {
-            throw new Error('Failed to load one or more UI components');
+            throw new Error('Failed to load header');
         }
     } catch (error) {
         console.error('Error in initializeApp:', error);
