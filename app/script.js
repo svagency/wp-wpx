@@ -29,57 +29,84 @@ function initializeApp() {
 // Make initializeApp available globally
 window.initializeApp = initializeApp;
 
+// Helper function to attach event listeners for popover
+function attachPopoverEventListeners(overlay, container, backdrop) {
+    // Remove any existing event listeners to prevent duplicates
+    const newBackdrop = backdrop.cloneNode(true);
+    backdrop.parentNode.replaceChild(newBackdrop, backdrop);
+    
+    // Add click handler to backdrop
+    newBackdrop.addEventListener('click', closePopover);
+    
+    // Stop propagation on container to prevent closing when clicking inside
+    container.addEventListener('click', (e) => {
+        e.stopPropagation();
+    });
+}
+
 // Initialize popover overlay
 function initPopover() {
-    if (popoverInitialized) return;
+    // Check if elements already exist
+    let overlay = document.getElementById('popoverOverlay');
+    let content = document.getElementById('popoverContent');
+    let container = document.getElementById('popoverContentContainer');
+    let backdrop = document.getElementById('popoverBackdrop');
     
-    // Create overlay element
-    const overlay = document.createElement('div');
-    overlay.id = 'popoverOverlay';
-    overlay.className = 'fixed inset-0 bg-black bg-opacity-0 z-50 items-center justify-center p-4 transition-all duration-300 ease-in-out';
-    overlay.style.display = 'none';
+    // If all elements exist, return them
+    if (overlay && content && container && backdrop) {
+        // Re-attach event listeners in case they were lost
+        attachPopoverEventListeners(overlay, container, backdrop);
+        return { overlay, content, container, backdrop };
+    }
     
-    // Create backdrop
-    const backdrop = document.createElement('div');
-    backdrop.id = 'popoverBackdrop';
-    backdrop.className = 'absolute inset-0 bg-black bg-opacity-0 transition-opacity duration-300';
+    // Create overlay if it doesn't exist
+    if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.id = 'popoverOverlay';
+        overlay.className = 'fixed inset-0 bg-black bg-opacity-0 z-50 flex items-center justify-center p-4 transition-all duration-300 pointer-events-auto';
+        overlay.style.display = 'none';
+        document.body.appendChild(overlay);
+    }
     
-    // Create content container
-    const container = document.createElement('div');
-    container.id = 'popoverContentContainer';
-    container.className = 'relative bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden transform transition-all duration-300 opacity-0 scale-95';
+    // Create backdrop if it doesn't exist
+    if (!backdrop) {
+        backdrop = document.createElement('div');
+        backdrop.id = 'popoverBackdrop';
+        backdrop.className = 'absolute inset-0 bg-black opacity-0 transition-opacity duration-300 cursor-pointer';
+        overlay.appendChild(backdrop);
+    }
     
-    // Create close button
-    const closeButton = document.createElement('button');
-    closeButton.className = 'absolute top-2 right-2 p-1 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors z-10';
-    closeButton.innerHTML = `
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-        </svg>
-    `;
-    closeButton.onclick = closePopover;
+    // Create container if it doesn't exist
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'popoverContentContainer';
+        container.className = 'relative bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto transform transition-all duration-300 opacity-0 scale-95';
+        overlay.appendChild(container);
+        
+        // Create close button
+        const closeButton = document.createElement('button');
+        closeButton.innerHTML = `
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+        `;
+        closeButton.className = 'absolute top-2 right-2 p-1 text-gray-400 hover:text-gray-600 focus:outline-none z-10';
+        closeButton.onclick = closePopover;
+        container.appendChild(closeButton);
+        
+        // Create content div if it doesn't exist
+        if (!content) {
+            content = document.createElement('div');
+            content.id = 'popoverContent';
+            content.className = 'p-6';
+            container.appendChild(content);
+        }
+        
+        // Attach event listeners
+        attachPopoverEventListeners(overlay, container, backdrop);
+    }
     
-    // Create content area
-    const content = document.createElement('div');
-    content.id = 'popoverContent';
-    content.className = 'p-6 overflow-y-auto max-h-[calc(90vh-4rem)]';
-    
-    // Add loading spinner
-    content.innerHTML = `
-        <div class="flex items-center justify-center h-full">
-            <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-        </div>
-    `;
-    
-    // Assemble the popover
-    container.appendChild(closeButton);
-    container.appendChild(content);
-    overlay.appendChild(backdrop);
-    overlay.appendChild(container);
-    
-    // Add to body
-    document.body.appendChild(overlay);
-    
+    return { overlay, content, container, backdrop };
     popoverInitialized = true;
     
     return {
@@ -1608,27 +1635,54 @@ function navigateCarousel(direction) {
 }
 
 // Open popover
-async function openPopover(item) {
+async function openPopover(item, event) {
+    if (!item) return;
+    
+    // Prevent default and stop propagation
+    if (event) {
+        event.stopPropagation();
+        event.preventDefault();
+    }
+    
+    // Don't do anything if we're already opening this item
+    if (currentItem && currentItem.id === item.id) return;
+    
+    // Set flag to prevent immediate close
+    isOpeningPopover = true;
+    
+    // Store the current item
     currentItem = item;
     
     // Initialize popover if not already done
     const { overlay, content, container, backdrop } = initPopover();
     
-    // Show overlay
-    overlay.style.display = 'flex';
+    // Reset any previous content and state
+    content.innerHTML = `
+        <div class="flex justify-center items-center h-64">
+            <div class="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+        </div>
+    `;
     
-    // Force reflow to ensure the element is in the DOM before applying transitions
-    void overlay.offsetHeight;
+    // Make sure overlay is visible and reset animations
+    overlay.style.display = 'flex';
+    void overlay.offsetHeight; // Force reflow
     
     // Start animations
     overlay.classList.remove('bg-opacity-0');
     overlay.classList.add('bg-opacity-50');
     
-    backdrop.classList.remove('bg-opacity-0');
-    backdrop.classList.add('bg-opacity-50');
+    if (backdrop) {
+        backdrop.classList.remove('opacity-0');
+        backdrop.classList.add('opacity-50');
+    }
     
     container.classList.remove('opacity-0', 'scale-95');
     container.classList.add('opacity-100', 'scale-100');
+    
+    // Reset flag after a short delay
+    setTimeout(() => {
+        isOpeningPopover = false;
+    }, 50);
     
     // Show loading state
     content.innerHTML = `
@@ -1656,9 +1710,17 @@ async function openPopover(item) {
 }
 
 // Close popover with animation
-function closePopover() {
+function closePopover(event) {
+    if (event) {
+        event.stopPropagation();
+        event.preventDefault();
+    }
+    
     const overlay = document.getElementById('popoverOverlay');
     if (!overlay) return;
+    
+    // Don't close if we're in the process of opening
+    if (isOpeningPopover) return;
     
     const container = document.getElementById('popoverContentContainer');
     const backdrop = document.getElementById('popoverBackdrop');
@@ -1668,8 +1730,8 @@ function closePopover() {
     overlay.classList.add('bg-opacity-0');
     
     if (backdrop) {
-        backdrop.classList.remove('bg-opacity-50');
-        backdrop.classList.add('bg-opacity-0');
+        backdrop.classList.remove('opacity-50');
+        backdrop.classList.add('opacity-0');
     }
     
     if (container) {
@@ -1677,9 +1739,14 @@ function closePopover() {
         container.classList.add('opacity-0', 'scale-95');
     }
     
-    // Hide overlay after animation completes
+    // Reset state after animation completes
     setTimeout(() => {
         overlay.style.display = 'none';
+        const content = document.getElementById('popoverContent');
+        if (content) {
+            content.innerHTML = ''; // Clear content
+        }
+        currentItem = null; // Reset current item
     }, 300); // Match this with the CSS transition duration
 }
 
