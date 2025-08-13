@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Module Test</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Core Modules -->
+    <script src="app/js/core/config.js"></script>
+    <script src="app/js/core/state.js"></script>
+    
+    <!-- Services -->
+    <script src="app/js/services/api.js"></script>
+    
+    <!-- Components -->
+    <script src="app/js/components/popover.js"></script>
+    
+    <!-- Views -->
+    <script src="app/js/views/baseView.js"></script>
+    <script src="app/js/views/feedView.js"></script>
+    
+    <!-- Test Script -->
+    <script>
+        // Check if all modules are loaded
+        function checkModules() {
+            const modules = {
+                'Config': typeof Config !== 'undefined',
+                'State': typeof State !== 'undefined',
+                'ApiService': typeof ApiService !== 'undefined',
+                'Popover': typeof Popover !== 'undefined',
+                'BaseView': typeof BaseView !== 'undefined',
+                'FeedView': typeof FeedView !== 'undefined'
+            };
+            
+            console.log('=== Loaded Modules ===');
+            Object.entries(modules).forEach(([name, loaded]) => {
+                console.log(`${name}: ${loaded ? '✅ Loaded' : '❌ Not Loaded'}`);
+            });
+            
+            // Show status in the UI
+            const status = document.createElement('div');
+            status.className = 'fixed bottom-4 right-4 bg-white p-4 rounded-lg shadow-lg z-50';
+            status.innerHTML = `
+                <h3 class="font-bold mb-2">Module Status</h3>
+                <ul class="text-sm">
+                    ${Object.entries(modules).map(([name, loaded]) => 
+                        `<li class="flex items-center">
+                            ${loaded ? '✅' : '❌'} ${name}
+                        </li>`
+                    ).join('')}
+                </ul>
+            `;
+            document.body.appendChild(status);
+            
+            // Log additional info
+            if (window.Config) {
+                console.log('Config:', Config);
+            }
+            if (window.State) {
+                console.log('State:', State);
+            }
+        }
+        
+        // Run check after a short delay to allow all scripts to load
+        window.addEventListener('load', () => {
+            setTimeout(checkModules, 500);
+        });
+    </script>
+</head>
+<body class="p-8">
+    <h1 class="text-2xl font-bold mb-4">Module Loading Test</h1>
+    <p class="mb-4">Check the browser console for detailed module loading information.</p>
+    <div id="status" class="p-4 bg-gray-100 rounded">
+        <p>Loading modules...</p>
+    </div>
+</body>
+</html>

@@ -1,0 +1,20 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom styles */
+.loading-indicator {
+    display: none;
+}
+
+.loading-indicator.visible {
+    display: block;
+}
+
+.error-message {
+    display: none;
+}
+
+.error-message.visible {
+    display: block;
+}

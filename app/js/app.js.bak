@@ -1,0 +1,413 @@
+// Import dependencies
+import { ApiService } from './services/api.js';
+import { FeedView } from './views/feedView.js';
+
+// Main application
+const App = (function() {
+    let feedView;
+    let isLoading = false;
+    let currentPage = 1;
+    let hasMore = true;
+    let currentType = 'posts';
+    let activeCategory = 'all';
+    let activeTag = 'all';
+    let searchQuery = '';
+
+    function updateState(newState) {
+        if (newState.isLoading !== undefined) isLoading = newState.isLoading;
+        if (newState.currentPage !== undefined) currentPage = newState.currentPage;
+        if (newState.hasMore !== undefined) hasMore = newState.hasMore;
+        if (newState.currentType !== undefined) currentType = newState.currentType;
+        if (newState.activeCategory !== undefined) activeCategory = newState.activeCategory;
+        if (newState.activeTag !== undefined) activeTag = newState.activeTag;
+        if (newState.searchQuery !== undefined) searchQuery = newState.searchQuery;
+        
+        console.log('State updated:', {
+            isLoading, currentPage, hasMore, currentType, 
+            activeCategory, activeTag, searchQuery
+        });
+    }
+
+    function getState() {
+        return {
+            isLoading, currentPage, hasMore, currentType,
+            activeCategory, activeTag, searchQuery
+        };
+    }
+
+    async function init() {
+        console.log('Initializing application...');
+        
+        try {
+            // Initialize views
+            feedView = new FeedView();
+            
+            // Setup event listeners
+            setupEventListeners();
+            
+            // Load initial content
+            await loadInitialContent();
+            
+            console.log('Application initialized successfully');
+        } catch (error) {
+            console.error('Failed to initialize application:', error);
+            showError('Failed to initialize application');
+        }
+    }
+
+    async function loadInitialContent() {
+        try {
+            console.log('Loading initial content...');
+            
+            // Reset state
+            updateState({
+                currentPage: 1,
+                hasMore: true,
+                isLoading: true,
+                currentType: 'posts',
+                activeCategory: 'all',
+                activeTag: 'all',
+                searchQuery: ''
+            });
+            
+            if (feedView) {
+                feedView.showLoading();
+                feedView.clearError();
+            }
+            
+            // Load post types first
+            const postTypes = await ApiService.fetchPostTypes();
+            console.log('Loaded post types:', postTypes);
+            
+            // Then load initial posts
+            await loadContent('posts');
+            
+        } catch (error) {
+            console.error('Error loading initial content:', error);
+            showError(`Failed to load content: ${error.message}`);
+            
+            // Show error in the feed view if available
+            if (feedView) {
+                feedView.showError('Failed to load content. Please try again later.');
+            }
+        } finally {
+            updateState({ isLoading: false });
+            
+            // Hide loading indicator
+            if (feedView) {
+                feedView.hideLoading();
+            }
+        }
+    }
+
+    async function loadContent(type, reset = true) {
+        if (isLoading) {
+            console.log('Content load already in progress');
+            return;
+        }
+
+        try {
+            console.log(`Loading content for type: ${type}, reset: ${reset}`);
+            
+            updateState({ 
+                isLoading: true,
+                currentType: type
+            });
+            
+            if (reset) {
+                updateState({ 
+                    currentPage: 1, 
+                    hasMore: true 
+                });
+                
+                if (feedView) {
+                    feedView.clear();
+                }
+            }
+
+            const params = {
+                _embed: 'true', // Include embedded resources
+                per_page: Config.settings.itemsPerPage,
+                page: currentPage,
+                orderby: 'date',
+                order: 'desc',
+                search: searchQuery
+            };
+            
+            // Add category/tag filters if set
+            if (activeCategory && activeCategory !== 'all') {
+                params.categories = activeCategory;
+            }
+            
+            if (activeTag && activeTag !== 'all') {
+                params.tags = activeTag;
+            }
+            
+            console.log('Fetching posts with params:', params);
+            const response = await ApiService.fetchPosts(type, params);
+            const items = Array.isArray(response) ? response : (response.items || []);
+            
+            console.log(`Received ${items.length} items`);
+            
+            if (feedView) {
+                if (reset) {
+                    feedView.render(items);
+                } else {
+                    feedView.appendItems(items);
+                }
+                
+                // Show message if no items found
+                if (items.length === 0 && reset) {
+                    feedView.showMessage('No items found');
+                }
+            }
+            
+            // Update pagination state
+            updateState({ 
+                currentPage: currentPage + 1,
+                hasMore: items.length >= Config.settings.itemsPerPage,
+                isLoading: false
+            });
+            
+            return items;
+            
+        } catch (error) {
+            console.error('Content load error:', error);
+            showError(error.message || 'Error loading content');
+            throw error;
+        } finally {
+            updateState({ isLoading: false });
+        }
+    }
+    
+    function showError(message) {
+        console.error('Error:', message);
+        if (feedView) {
+            feedView.showError(message);
+        } else {
+            // Fallback error display
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'error-message p-4 bg-red-100 text-red-700 rounded';
+            errorDiv.textContent = message;
+            document.body.appendChild(errorDiv);
+            
+            // Remove after 5 seconds
+            setTimeout(() => {
+                if (document.body.contains(errorDiv)) {
+                    document.body.removeChild(errorDiv);
+                }
+            }, 5000);
+        }
+    }
+
+    function setupEventListeners() {
+        console.log('Setting up event listeners...');
+        
+        // Handle popup close on overlay click
+        document.addEventListener('click', (e) => {
+            const popover = document.getElementById('popover-container');
+            if (e.target === popover) {
+                console.log('Closing popover via overlay click');
+                if (window.Popover && typeof window.Popover.close === 'function') {
+                    window.Popover.close();
+                }
+            }
+        });
+
+        // Handle escape key to close popover
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && window.Popover && 
+                typeof window.Popover.isOpen === 'function' && 
+                window.Popover.isOpen()) {
+                console.log('Closing popover via Escape key');
+                window.Popover.close();
+            }
+        });
+        
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            if (window.Popover && 
+                typeof window.Popover.isOpen === 'function' && 
+                window.Popover.isOpen() &&
+                typeof window.Popover.reposition === 'function') {
+                window.Popover.reposition();
+            }
+        });
+        
+        // Handle infinite scroll
+        let scrollTimeout;
+        window.addEventListener('scroll', () => {
+            clearTimeout(scrollTimeout);
+            scrollTimeout = setTimeout(() => {
+                if (isLoading || !hasMore) return;
+                
+                const scrollPosition = window.innerHeight + window.scrollY;
+                const pageHeight = document.documentElement.offsetHeight;
+                const threshold = 300; // pixels from bottom
+                
+                if (scrollPosition > pageHeight - threshold) {
+                    loadContent(currentType, false);
+                }
+            }, 200);
+        });
+        
+        console.log('Event listeners set up');
+    }
+    };
+
+    // Add category/tag filters if set
+    if (activeCategory && activeCategory !== 'all') {
+        params.categories = activeCategory;
+    }
+
+    if (activeTag && activeTag !== 'all') {
+        params.tags = activeTag;
+    }
+
+    console.log('Fetching posts with params:', params);
+    const response = await ApiService.fetchPosts(type, params);
+    const items = Array.isArray(response) ? response : (response.items || []);
+
+    console.log(`Received ${items.length} items`);
+
+    if (feedView) {
+        if (reset) {
+            feedView.render(items);
+        } else {
+            feedView.appendItems(items);
+        }
+
+        // Show message if no items found
+        if (items.length === 0 && reset) {
+            feedView.showMessage('No items found');
+        }
+    }
+
+    // Update pagination state
+    updateState({ 
+        currentPage: currentPage + 1,
+        hasMore: items.length >= Config.settings.itemsPerPage,
+        isLoading: false
+    });
+
+    return items;
+
+} catch (error) {
+    console.error('Content load error:', error);
+    showError(error.message || 'Error loading content');
+    throw error;
+} finally {
+    updateState({ isLoading: false });
+}
+}
+
+function showError(message) {
+console.error('Error:', message);
+if (feedView) {
+    feedView.showError(message);
+} else {
+    // Fallback error display
+    const errorDiv = document.createElement('div');
+    errorDiv.className = 'error-message p-4 bg-red-100 text-red-700 rounded';
+    errorDiv.textContent = message;
+    document.body.appendChild(errorDiv);
+
+    // Remove after 5 seconds
+    setTimeout(() => {
+        if (document.body.contains(errorDiv)) {
+            document.body.removeChild(errorDiv);
+        }
+    }, 5000);
+}
+}
+
+function setupEventListeners() {
+console.log('Setting up event listeners...');
+
+// Handle popup close on overlay click
+document.addEventListener('click', (e) => {
+    const popover = document.getElementById('popover-container');
+    if (e.target === popover) {
+        console.log('Closing popover via overlay click');
+        if (window.Popover && typeof window.Popover.close === 'function') {
+            window.Popover.close();
+        }
+    }
+});
+
+// Handle escape key to close popover
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && window.Popover && 
+        typeof window.Popover.isOpen === 'function' && 
+        window.Popover.isOpen()) {
+        console.log('Closing popover via Escape key');
+        window.Popover.close();
+    }
+});
+
+// Handle window resize
+window.addEventListener('resize', () => {
+    if (window.Popover && 
+        typeof window.Popover.isOpen === 'function' && 
+        window.Popover.isOpen() &&
+        typeof window.Popover.reposition === 'function') {
+        window.Popover.reposition();
+    }
+});
+
+// Handle infinite scroll
+let scrollTimeout;
+window.addEventListener('scroll', () => {
+    clearTimeout(scrollTimeout);
+    scrollTimeout = setTimeout(() => {
+        if (isLoading || !hasMore) return;
+
+        const scrollPosition = window.innerHeight + window.scrollY;
+        const pageHeight = document.documentElement.offsetHeight;
+        const threshold = 300; // pixels from bottom
+
+        if (scrollPosition > pageHeight - threshold) {
+            loadContent(currentType, false);
+        }
+    }, 200);
+});
+
+console.log('Event listeners set up');
+}
+
+// Public API
+return {
+    init,
+    loadContent,
+    getState,
+    updateState,
+    showError
+};
+})();
+
+// Export the App module
+export default App;
+
+// Initialize the app when DOM is ready
+document.addEventListener('DOMContentLoaded', () => {
+console.log('DOM fully loaded, initializing app...');
+
+// Make App globally available for debugging
+window.App = window.App || App;
+
+// Initialize the app
+App.init();
+
+// Log app state for debugging
+console.log('App initialized with state:', App.getState());
+    console.log('DOM fully loaded, initializing app...');
+    
+    // Make App globally available for debugging
+    window.App = window.App || App;
+    
+    // Initialize the app
+    App.init();
+    
+    // Log app state for debugging
+    console.log('App initialized with state:', App.getState());
+});

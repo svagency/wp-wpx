@@ -97,3 +97,36 @@ add_filter('rest_prepare_page', 'wp_sv_ultralight_rest_prepare_post', 10, 3);
 
 // Add custom post types to the filter if needed
 // add_filter('rest_prepare_custom_post_type', 'wp_sv_ultralight_rest_prepare_post', 10, 3);
+
+/**
+ * Enqueue scripts and styles.
+ */
+function wp_sv_ultralight_scripts() {
+    // Theme styles
+    wp_enqueue_style('wp-sv-ultralight-style', get_stylesheet_uri(), array(), wp_get_theme()->get('Version'));
+    
+    // Main script (depends on jQuery)
+    wp_enqueue_script(
+        'wp-sv-ultralight-script',
+        get_template_directory_uri() . '/app/script.js',
+        array('jquery'),
+        wp_get_theme()->get('Version'),
+        true
+    );
+    
+    // Localize script with site settings
+    wp_localize_script('wp-sv-ultralight-script', 'wpApiSettings', array(
+        'root' => esc_url_raw(rest_url()),
+        'nonce' => wp_create_nonce('wp_rest')
+    ));
+}
+add_action('wp_enqueue_scripts', 'wp_sv_ultralight_scripts');
+
+// Add module type to script tag
+function wp_sv_ultralight_add_module_type($tag, $handle) {
+    if ('wp-sv-ultralight-script' === $handle) {
+        $tag = str_replace(' src', ' type="module" src', $tag);
+    }
+    return $tag;
+}
+add_filter('script_loader_tag', 'wp_sv_ultralight_add_module_type', 10, 2);

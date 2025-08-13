@@ -568,11 +568,62 @@ function init() {
         alert('Settings dialog will be implemented here');
     });
     
-    // Initialize the app
-    resetAndLoadContent('posts');
-    
-    // Set up intersection observer for infinite scroll
-    observer.observe(document.getElementById('endMarker'));
+    // Load core modules
+    function loadScript(src) {
+        return new Promise((resolve, reject) => {
+            const script = document.createElement('script');
+            script.src = src;
+            script.onload = resolve;
+            script.onerror = () => reject(new Error(`Failed to load script: ${src}`));
+            document.head.appendChild(script);
+        });
+    }
+
+    // Load all required scripts in order
+    async function loadScripts() {
+        const basePath = '/app/public/wp-content/themes/wp-wpx/app/js';
+        
+        try {
+            // Core
+            await loadScript(`${basePath}/core/config.js`);
+            await loadScript(`${basePath}/core/state.js`);
+            
+            // Services
+            await loadScript(`${basePath}/services/api.js`);
+            
+            // Components
+            await loadScript(`${basePath}/components/popover.js`);
+            
+            // Views
+            await loadScript(`${basePath}/views/baseView.js`);
+            await loadScript(`${basePath}/views/feedView.js`);
+            
+            // Main app
+            await loadScript(`${basePath}/app.js`);
+            
+            console.log('All scripts loaded successfully');
+        } catch (error) {
+            console.error('Error loading scripts:', error);
+            // Show error to user
+            const container = document.getElementById('content') || document.body;
+            container.innerHTML = `
+                <div class="p-4 bg-red-100 text-red-700 rounded">
+                    <h2 class="text-xl font-bold">Error Loading Application</h2>
+                    <p>${error.message}</p>
+                    <p class="mt-2 text-sm">Please refresh the page to try again.</p>
+                </div>
+            `;
+        }
+    }
+
+    // Start loading scripts when DOM is ready
+    loadScripts().then(() => {
+        // Initialize the app
+        resetAndLoadContent('posts');
+        
+        // Set up intersection observer for infinite scroll
+        observer.observe(document.getElementById('endMarker'));
+    });
 }
 
 // Update items per page setting
